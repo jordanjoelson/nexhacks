@@ -1,4 +1,4 @@
-This is a [Next.js](https://nextjs.org) project with [Overshoot SDK](https://www.npmjs.com/package/@overshoot/sdk) integration for real-time AI vision analysis on live video streams.
+Pala - AI-powered pickleball analysis and coaching platform with [Overshoot SDK](https://www.npmjs.com/package/@overshoot/sdk) integration for real-time AI vision analysis on live video streams.
 
 ## Setup
 
@@ -71,7 +71,7 @@ The Overshoot SDK connects directly from your browser to `https://api.overshoot.
 
 1. **Verify API CORS Support**: The Overshoot API should support CORS for browser clients. If you're getting CORS errors, contact Overshoot support to ensure CORS is enabled.
 
-2. **Use HTTPS**: Some APIs require HTTPS. Try deploying to Vercel/Netlify for testing, or use HTTPS locally.
+2. **Use HTTPS**: Some APIs require HTTPS. Deploy to a hosting platform that supports HTTPS, or use HTTPS locally.
 
 3. **Check Browser Console**: Open browser DevTools (F12) and check the Console/Network tabs for detailed CORS error messages.
 
@@ -97,17 +97,6 @@ For more information about the Overshoot SDK, see:
 - [npm package](https://www.npmjs.com/package/@overshoot/sdk)
 - [GitHub repository](https://github.com/Overshoot-ai/overshoot-js-sdk)
 
-## Learn More
+## Deployment
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Deploy the application to any hosting platform that supports Node.js applications.
