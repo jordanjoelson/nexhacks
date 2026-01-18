@@ -30,7 +30,7 @@ export default function UploadPage() {
       setUploadProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
-          setTimeout(() => router.push("/analysis/demo-123"), 500);
+          setTimeout(() => router.push("/analysis/${id}"), 500);
           return 100;
         }
         return prev + 10;
