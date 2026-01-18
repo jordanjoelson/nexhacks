@@ -177,7 +177,7 @@ export default function DetailedAnalysisPage() {
       setCurrentTime(time);
     }
     // Sync audio to video time
-    if (audioRef.current && audioUrl) {
+    if (audioRef.current && audioUrl && videoRef.current) {
       const audioDuration = audioRef.current.duration;
       const videoDuration = videoRef.current.duration;
       if (audioDuration > 0 && videoDuration > 0) {
@@ -326,7 +326,7 @@ export default function DetailedAnalysisPage() {
           }
         } else {
           // Create new track - assign ID based on position if no existing tracks
-          let newId: number;
+          let newId: number = 1;
           if (playerTracksRef.current.size === 0) {
             // First player detected
             newId = 1;

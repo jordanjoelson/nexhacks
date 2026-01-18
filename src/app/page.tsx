@@ -125,8 +125,8 @@ export default function Home() {
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 lg:py-20 relative overflow-hidden">
           {/* Animated background orbs */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-20 left-10 sm:left-20 w-48 sm:w-64 lg:w-96 h-48 sm:h-64 lg:h-96 bg-[#FF6B35]/20 rounded-full blur-3xl animate-pulse" />
-            <div className="absolute bottom-20 right-10 sm:right-20 w-48 sm:w-64 lg:w-96 h-48 sm:h-64 lg:h-96 bg-[#4ECDC4]/20 rounded-full blur-3xl animate-pulse delay-1000" />
+            <div className="absolute top-20 left-10 sm:left-20 w-48 sm:w-64 lg:w-96 h-48 sm:h-64 lg:h-96 bg-[#FF6B35]/35 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-20 right-10 sm:right-20 w-48 sm:w-64 lg:w-96 h-48 sm:h-64 lg:h-96 bg-[#4ECDC4]/35 rounded-full blur-3xl animate-pulse delay-1000" />
           </div>
 
           <div className="relative z-10 text-center max-w-4xl mx-auto">
@@ -284,7 +284,15 @@ export default function Home() {
 
         {/* CTA Section */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 lg:py-20">
-          <div className="bg-gradient-to-br from-[#FF6B35] to-[#FFB84D] rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-12 text-center text-white">
+          <div className="bg-gradient-to-br from-[#FF6B35] to-[#FFB84D] rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-12 text-center text-white relative">
+            {/* Pengu in top left corner */}
+            <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-10">
+              <img 
+                src="/pengu.gif" 
+                alt="Pengu" 
+                className="w-20 h-20 sm:w-28 sm:h-28 lg:w-32 lg:h-32 object-contain -rotate-12"
+              />
+            </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 px-4" style={{ fontFamily: "var(--font-display)" }}>
               Ready to Transform Your Game?
             </h2>

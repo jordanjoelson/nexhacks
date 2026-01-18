@@ -20,7 +20,15 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#FFFAF5] flex items-center justify-center p-6">
-      <Card className="w-full max-w-md border-2 border-[#FFB84D]/20 shadow-xl bg-white">
+      <Card className="w-full max-w-md border-2 border-[#FFB84D]/20 shadow-xl bg-white relative">
+        {/* Image in top right corner */}
+        <div className="absolute -top-16 -right-12 z-10">
+          <img 
+            src="/pdle2.png" 
+            alt="PALA" 
+            className="w-32 h-32 sm:w-40 sm:h-40 object-contain"
+          />
+        </div>
         <CardHeader className="text-center space-y-4">
           <h1 className="text-3xl font-black text-[#2D3142]" style={{ fontFamily: "var(--font-display)" }}>
             PALA

@@ -87,7 +87,15 @@ export default function UploadPage() {
           </p>
         </div>
 
-        <Card className="border-2 border-dashed border-[#FF6B35] bg-white shadow-xl">
+        <Card className="border-2 border-dashed border-[#FF6B35] bg-white shadow-xl relative">
+          {/* Pickball image in top left corner on border */}
+          <div className="absolute -top-6 sm:-top-8 lg:-top-10 -left-4 sm:-left-6 z-10">
+            <img 
+              src="/pickball.png" 
+              alt="Pickleball" 
+              className="w-16 h-16 sm:w-20 sm:h-20 lg:w-28 lg:h-28 object-contain drop-shadow-lg rotate-12"
+            />
+          </div>
           <CardContent className="p-6 sm:p-8 lg:p-12">
             <div
               onDrop={handleDrop}

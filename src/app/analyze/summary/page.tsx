@@ -306,7 +306,15 @@ IMPORTANT: Make the summary VERY DETAILED and comprehensive. Keep bullet points 
         </div>
 
         {/* IDENTICAL main Card shell (border-dashed + orange) */}
-        <Card className="border-2 border-dashed border-[#FF6B35] bg-white shadow-xl">
+        <Card className="border-2 border-dashed border-[#FF6B35] bg-white shadow-xl relative">
+          {/* pdle.png in bottom left corner */}
+          <div className="absolute -bottom-6 sm:-bottom-8 lg:-bottom-10 -left-4 sm:-left-6 z-10">
+            <img 
+              src="/pdle.png" 
+              alt="PALA" 
+              className="w-16 h-16 sm:w-20 sm:h-20 lg:w-28 lg:h-28 object-contain drop-shadow-lg"
+            />
+          </div>
           <CardContent className="p-6 sm:p-8 lg:p-12">
             <div className="flex flex-col items-center justify-center min-h-[300px] sm:min-h-[400px] space-y-4 sm:space-y-6">
               {/* Status row */}
