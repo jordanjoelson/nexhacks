@@ -1,25 +1,59 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #000000;
+  /* Warm Color Palette - Pickleball Energy */
+  --primary: #FF6B35;
+  --primary-dark: #E85A2A;
+  --secondary: #FFB84D;
+  --accent: #4ECDC4;
+  --background: #FFFAF5;
+  --surface: #FFF5EB;
+  --text-primary: #2D3142;
+  --text-secondary: #6B7280;
+  --foreground: #2D3142;
+  --card: #FFFFFF;
+  --card-foreground: #2D3142;
+  --border: #E5E7EB;
+  --input: #E5E7EB;
+  --ring: #FF6B35;
+  --muted: #F3F4F6;
+  --muted-foreground: #6B7280;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
 }
 
 @theme inline {
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
   --color-foreground: var(--foreground);
-  --font-mono: var(--font-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --font-display: var(--font-display);
   --font-sans: var(--font-sans);
 }
 
 body {
-  background: #ffffff;
-  color: #000000;
-  font-family: var(--font-mono), 'Courier New', monospace;
+  background: var(--background);
+  color: var(--text-primary);
+  font-family: var(--font-sans), "Inter Variable", "Manrope", "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-mono), 'Courier New', monospace;
+  font-family: var(--font-display), var(--font-sans), "Inter Variable", "Manrope", "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  color: var(--text-primary);
 }
 
 .loader {
@@ -35,4 +69,45 @@ h1, h2, h3, h4, h5, h6 {
 
 @keyframes l13{ 
   100%{transform: rotate(1turn)}
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-50% - var(--gap) / 2));
+  }
+}
+
+@keyframes marquee-reverse {
+  0% {
+    transform: translateX(calc(-50% - var(--gap) / 2));
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes marquee-vertical {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(calc(-100% - var(--gap)));
+  }
+}
+
+.animate-marquee {
+  animation: marquee var(--duration) linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-reverse {
+  animation: marquee-reverse var(--duration) linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-vertical {
+  animation: marquee-vertical var(--duration) linear infinite;
 }
