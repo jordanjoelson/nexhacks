@@ -120,14 +120,6 @@ export default function VideoPlayer({
 
   return (
     <div className={`relative w-full h-full ${className}`}>
-      {/* Pala logo in top right corner */}
-      <div className="absolute top-4 right-4 z-50 pointer-events-none">
-        <img 
-          src="/pala.png" 
-          alt="PALA" 
-          className="w-20 h-20 object-contain drop-shadow-lg"
-        />
-      </div>
       <video
         ref={videoRef}
         className="w-full h-full object-contain border border-gray-200 rounded-lg"

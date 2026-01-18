@@ -144,14 +144,6 @@ export default function FootagePage() {
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <Card className="relative overflow-visible border-2 border-[#FF6B35]/20 shadow-xl bg-white">
-              {/* Pala logo on top right border, rotated slightly */}
-              <div className="absolute -top-[5rem] -right-6 z-50 pointer-events-none">
-                <img 
-                  src="/pala.png" 
-                  alt="PALA" 
-                  className="w-40 h-40 object-contain drop-shadow-lg rotate-12"
-                />
-              </div>
               <div className="relative aspect-video bg-black">
                 <video
                   ref={videoRef}

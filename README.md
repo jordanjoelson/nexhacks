@@ -17,9 +17,14 @@ Create a `.env.local` file in the root directory:
 ```bash
 NEXT_PUBLIC_OVERSHOOT_API_KEY=your-api-key-here
 NEXT_PUBLIC_OVERSHOOT_API_URL=https://api.overshoot.ai
+ELEVENLABS_API_KEY=your-elevenlabs-api-key-here
+GEMINI_API_KEY=your-gemini-api-key-here
 ```
 
-Replace `your-api-key-here` with your actual Overshoot API key.
+Replace the placeholders with your actual API keys:
+- **Overshoot API Key**: Get from [Overshoot Dashboard](https://overshoot.ai)
+- **ElevenLabs API Key**: Get from [ElevenLabs Dashboard](https://elevenlabs.io) (required for voice coaching)
+- **Gemini API Key**: Get from [Google AI Studio](https://makersuite.google.com/app/apikey) (required for chat with PALA)
 
 **API URL Note:** Some accounts may use a different endpoint format:
 - Default: `https://api.overshoot.ai`
