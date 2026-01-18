@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { RealtimeVision, type StreamInferenceResult } from "@overshoot/sdk";
+import { useVideoStore } from "@/store/videoStore";
+import { useRouter } from "next/navigation";
 
 import VideoPlayer from "@/components/VideoPlayer";
 import { Button } from "@/components/ui/button";
@@ -23,19 +24,21 @@ import {
 type Phase = "analyzing" | "ready";
 
 export default function DetailedAnalysisPage() {
-  const searchParams = useSearchParams();
-  const videoUrl = searchParams.get("video");
 
+  const router = useRouter();
   const [phase, setPhase] = useState<Phase>("analyzing");
   const [fullText, setFullText] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const file = useVideoStore((s) => s.file);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
 
   const visionRef = useRef<RealtimeVision | null>(null);
   const resultsRef = useRef<StreamInferenceResult[]>([]);
   const analysisTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
 
   useEffect(() => {
-    if (!videoUrl) return;
+    if (!file) return;
 
     const apiKey = process.env.NEXT_PUBLIC_OVERSHOOT_API_KEY;
     const apiUrl = process.env.NEXT_PUBLIC_OVERSHOOT_API_URL || "https://api.overshoot.ai";
@@ -51,13 +54,11 @@ export default function DetailedAnalysisPage() {
         setPhase("analyzing");
         resultsRef.current = [];
 
-        // ✅ IMPORTANT FIX: do NOT fetch() the video in the browser
-        // Send the URL directly to Overshoot instead.
         const vision = new RealtimeVision({
           apiUrl,
           apiKey,
           prompt: `Provide a DETAILED pickleball breakdown. Include:
-
+        
 1) Technique breakdown by category (serve, return, dinks, volleys, drives)
 2) Footwork & positioning notes
 3) Shot selection / decision making
@@ -67,9 +68,11 @@ export default function DetailedAnalysisPage() {
 
 Be specific and actionable.`,
           // ✅ Use url source
-          source: { type: "video", url: videoUrl },
-          onResult: (result: StreamInferenceResult) => {
-            if (result.result && result.ok) resultsRef.current.push(result);
+          source: { type: "video", file },
+          onResult: (result) => {
+            if (result.result?.trim()) {
+              resultsRef.current.push(result);
+            }
           },
           onError: (err) => {
             console.error("Overshoot error:", err);
@@ -103,7 +106,14 @@ Be specific and actionable.`,
       if (analysisTimeoutRef.current) clearTimeout(analysisTimeoutRef.current);
       if (visionRef.current) visionRef.current.stop();
     };
-  }, [videoUrl]);
+  }, [file]);
+
+  useEffect(() => {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
   return (
     <div className="min-h-screen bg-[#FFFAF5] p-6">
@@ -156,7 +166,7 @@ Be specific and actionable.`,
               )}
 
               {/* Video preview (same as Summary) */}
-              {videoUrl && (
+              {previewUrl && (
                 <div className="w-full space-y-3">
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-[#4ECDC4]" />
@@ -167,7 +177,7 @@ Be specific and actionable.`,
                   </div>
 
                   <div className="mt-2 p-4 bg-[#FFF5EB] rounded-lg border border-[#FFB84D]/20">
-                    <VideoPlayer videoUrl={videoUrl} />
+                    <VideoPlayer videoUrl={previewUrl} />
                   </div>
                 </div>
               )}
@@ -190,8 +200,8 @@ Be specific and actionable.`,
                       size="lg"
                       className="bg-[#FF6B35] hover:bg-[#E85A2A] text-lg px-10 group"
                       onClick={() => {
-                        const href = `/analyze/summary?video=${encodeURIComponent(videoUrl || "")}`;
-                        window.location.href = href;
+                        const href = `/analyze/summary?video=${encodeURIComponent(previewUrl || "")}`;
+                        router.push
                       }}
                     >
                       Back to Summary
@@ -201,7 +211,7 @@ Be specific and actionable.`,
                 </div>
               )}
 
-              {!videoUrl && (
+              {!previewUrl && (
                 <div className="text-center space-y-2">
                   <AlertCircle className="w-10 h-10 text-[#FF6B35] mx-auto" />
                   <p className="text-[#2D3142] font-bold">Missing video</p>

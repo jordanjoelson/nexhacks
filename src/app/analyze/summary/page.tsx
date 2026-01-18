@@ -3,7 +3,9 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { RealtimeVision, type StreamInferenceResult } from "@overshoot/sdk";
+import { useVideoStore } from "@/store/videoStore";
 
 import VideoPlayer from "@/components/VideoPlayer";
 import Loader from "@/components/Loader";
@@ -147,13 +149,14 @@ function parseStructuredAnalysis(text: string): { summary: string; points: Analy
 }
 
 export default function SummaryPage() {
-  const searchParams = useSearchParams();
-  const videoUrl = searchParams.get("video");
 
+  const router = useRouter()
   const [phase, setPhase] = useState<"analyzing" | "typing" | "points">("analyzing");
   const [summaryText, setSummaryText] = useState<string>("");
   const [analysisPoints, setAnalysisPoints] = useState<AnalysisPoint[]>([]);
   const [typingKey, setTypingKey] = useState(0);
+  const file = useVideoStore((s) => s.file);
+  const [previewUrl, setPreviewUrl] = useState("");
 
   // NEW: controls for "only show bullets after typing complete"
   const [typingComplete, setTypingComplete] = useState(false);
@@ -180,7 +183,7 @@ export default function SummaryPage() {
   };
 
   useEffect(() => {
-    if (!videoUrl) return;
+    if (!file) return;
 
     const apiKey = process.env.NEXT_PUBLIC_OVERSHOOT_API_KEY;
     const apiUrl = process.env.NEXT_PUBLIC_OVERSHOOT_API_URL || "https://api.overshoot.ai";
@@ -192,9 +195,6 @@ export default function SummaryPage() {
 
     const initAnalysis = async () => {
       try {
-        const response = await fetch(videoUrl);
-        const blob = await response.blob();
-        const videoFile = new File([blob], "video.mp4", { type: blob.type || "video/mp4" });
 
         const vision = new RealtimeVision({
           apiUrl,
@@ -222,9 +222,11 @@ export default function SummaryPage() {
 - [weakness 3]: [tip]
 
 IMPORTANT: Make the summary VERY DETAILED and comprehensive. Keep bullet points SHORT (max 8 words).`,
-          source: { type: "video", file: videoFile },
-          onResult: (result: StreamInferenceResult) => {
-            if (result.result && result.ok) resultsRef.current.push(result);
+          source: { type: "video", file },
+          onResult: (result) => {
+            if (result.result?.trim()) {
+              resultsRef.current.push(result);
+            }
           },
           onError: (err) => console.error("Overshoot error:", err),
         });
@@ -267,7 +269,14 @@ IMPORTANT: Make the summary VERY DETAILED and comprehensive. Keep bullet points 
       if (analysisTimeoutRef.current) clearTimeout(analysisTimeoutRef.current);
       if (visionRef.current) visionRef.current.stop();
     };
-  }, [videoUrl]);
+  }, [file]);
+
+  useEffect(() => {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
   return (
     <div className="min-h-screen bg-[#FFFAF5] p-6">
@@ -298,7 +307,7 @@ IMPORTANT: Make the summary VERY DETAILED and comprehensive. Keep bullet points 
               )}
 
               {/* Video preview */}
-              {videoUrl && (
+              {previewUrl && (
                 <div className="w-full space-y-3">
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-[#4ECDC4]" />
@@ -309,7 +318,7 @@ IMPORTANT: Make the summary VERY DETAILED and comprehensive. Keep bullet points 
                   </div>
 
                   <div className="mt-2 p-4 bg-[#FFF5EB] rounded-lg border border-[#FFB84D]/20">
-                    <VideoPlayer videoUrl={videoUrl} />
+                    <VideoPlayer videoUrl={previewUrl} />
                   </div>
                 </div>
               )}
@@ -395,8 +404,8 @@ IMPORTANT: Make the summary VERY DETAILED and comprehensive. Keep bullet points 
                       size="lg"
                       className="bg-[#FF6B35] hover:bg-[#E85A2A] text-lg px-10 group"
                       onClick={() => {
-                        const href = `/analyze/detailed?video=${encodeURIComponent(videoUrl || "")}`;
-                        window.location.href = href;
+                        const href = `/analyze/detailed?video=${encodeURIComponent(previewUrl || "")}`;
+                        router.push("/analyze/detailed");
                       }}
                     >
                       Dive Deeper
@@ -407,7 +416,7 @@ IMPORTANT: Make the summary VERY DETAILED and comprehensive. Keep bullet points 
               )}
 
 
-              {!videoUrl && (
+              {!previewUrl && (
                 <div className="text-center space-y-2">
                   <AlertCircle className="w-10 h-10 text-[#FF6B35] mx-auto" />
                   <p className="text-[#2D3142] font-bold">Missing video</p>

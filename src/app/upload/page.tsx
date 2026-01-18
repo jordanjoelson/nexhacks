@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Upload, Video, CheckCircle, Loader2, Camera, Move, Play } from "lucide-react";
+import { useVideoStore } from "@/store/videoStore";
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 
@@ -11,6 +12,7 @@ export default function UploadPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const setFile = useVideoStore((s) => s.setFile);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (file: File | null) => {
@@ -25,15 +27,15 @@ export default function UploadPage() {
     setIsUploading(true);
     setSelectedFile(fileToUpload);
 
-    const videoUrl = URL.createObjectURL(fileToUpload);
-
     // Simulate upload progress
     const interval = setInterval(() => {
       setUploadProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
           setTimeout(() => {
-            router.push(`/analyze/summary?video=${encodeURIComponent(videoUrl)}`);
+            setFile(fileToUpload);          // ✅ always the real File
+            setIsUploading(false);          // ✅ end upload state
+            router.push("/analyze/summary");
           }, 500);
 
           return 100;
