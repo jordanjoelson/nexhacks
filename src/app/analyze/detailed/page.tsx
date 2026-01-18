@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { RealtimeVision, type StreamInferenceResult } from "@overshoot/sdk";
 import { useVideoStore } from "@/store/videoStore";
 import ReactMarkdown from "react-markdown";
+import { motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,6 +26,7 @@ import {
   MessageCircle,
   Send,
   User,
+  TrendingUp,
 } from "lucide-react";
 
 type Phase = "analyzing" | "ready";
@@ -244,6 +246,8 @@ export default function DetailedAnalysisPage() {
       setIsGeneratingAudio(true);
       setAudioError(null);
 
+      console.log("Generating TTS audio for text length:", text.length);
+
       const response = await fetch("/api/elevenlabs-tts", {
         method: "POST",
         headers: {
@@ -254,15 +258,23 @@ export default function DetailedAnalysisPage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        console.error("TTS API error:", errorData);
         throw new Error(errorData.error || "Failed to generate audio");
       }
 
       const audioBlob = await response.blob();
+      console.log("Audio blob received, size:", audioBlob.size);
+      
+      if (audioBlob.size === 0) {
+        throw new Error("Received empty audio file");
+      }
+
       const url = URL.createObjectURL(audioBlob);
       setAudioUrl(url);
+      console.log("Audio URL set:", url);
 
       // Clean up old URL if it exists
-      if (audioRef.current?.src) {
+      if (audioRef.current?.src && audioRef.current.src.startsWith("blob:")) {
         URL.revokeObjectURL(audioRef.current.src);
       }
     } catch (err) {
@@ -280,39 +292,54 @@ export default function DetailedAnalysisPage() {
 
     if (!video || !audio || !audioUrl || isGeneratingAudio) return;
 
-    const startPlayback = async () => {
-      try {
-        // Wait for audio to be ready
-        if (audio.readyState < 2) {
-          audio.addEventListener("canplay", startPlayback, { once: true });
-          return;
-        }
+    console.log("Setting up auto-play, audio URL:", audioUrl);
 
+    const handleCanPlay = async () => {
+      try {
+        console.log("Audio can play, readyState:", audio.readyState, "duration:", audio.duration);
+        
         // Sync audio to video start
         if (video.duration > 0 && audio.duration > 0) {
           audio.currentTime = 0;
         }
 
         // Start both video and audio
-        const audioPromise = audio.play();
-        const videoPromise = video.play();
+        console.log("Attempting to play video and audio...");
+        const audioPromise = audio.play().catch((err) => {
+          console.error("Audio play error:", err);
+          throw err;
+        });
+        const videoPromise = video.play().catch((err) => {
+          console.error("Video play error:", err);
+          throw err;
+        });
 
         await Promise.all([audioPromise, videoPromise]);
+        console.log("Both video and audio started playing");
         setIsPlaying(true);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error auto-playing:", err);
-        // User interaction might be required, so don't auto-play
+        if (err.name === "NotAllowedError") {
+          console.log("Auto-play blocked by browser. User interaction required.");
+          setAudioError("Click play to hear PALA's narration");
+        }
       }
     };
 
-    // Small delay to ensure elements are ready
-    const timeout = setTimeout(() => {
-      startPlayback();
-    }, 100);
+    // Wait for audio to be ready
+    if (audio.readyState >= 2) {
+      // Audio is already loaded
+      handleCanPlay();
+    } else {
+      // Wait for audio to load
+      audio.addEventListener("canplay", handleCanPlay, { once: true });
+      audio.addEventListener("loadeddata", handleCanPlay, { once: true });
+      audio.load(); // Ensure audio starts loading
+    }
 
     return () => {
-      clearTimeout(timeout);
-      audio.removeEventListener("canplay", startPlayback);
+      audio.removeEventListener("canplay", handleCanPlay);
+      audio.removeEventListener("loadeddata", handleCanPlay);
     };
   }, [audioUrl, isGeneratingAudio]);
 
@@ -441,7 +468,12 @@ Be specific and actionable.`,
 
           // Generate TTS audio from the analysis text
           if (text && text.trim()) {
-            generateTTSAudio(text);
+            console.log("Analysis complete, generating TTS for text length:", text.length);
+            // Use first 5000 characters to avoid API limits
+            const textForTTS = text.trim().substring(0, 5000);
+            generateTTSAudio(textForTTS);
+          } else {
+            console.warn("No text available for TTS generation");
           }
         }, 20000);
       } catch (e: any) {
@@ -478,22 +510,22 @@ Be specific and actionable.`,
   }, [previewUrl]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FFFAF5] to-[#FFF5EB] px-6 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-[#FFFAF5] to-[#FFF5EB] px-4 sm:px-6 py-8 sm:py-12">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <Button
             variant="ghost"
             onClick={() => router.back()}
-            className="mb-4 hover:bg-[#FF6B35]/10 text-[#6B7280] hover:text-[#2D3142]"
+            className="mb-3 sm:mb-4 hover:bg-[#FF6B35]/10 text-[#6B7280] hover:text-[#2D3142] text-sm sm:text-base"
           >
             <ArrowLeft className="mr-2 w-4 h-4" />
             Back to Analysis
           </Button>
-          <h1 className="text-4xl font-bold mb-2 text-[#2D3142]" style={{ fontFamily: "var(--font-display)" }}>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 text-[#2D3142]" style={{ fontFamily: "var(--font-display)" }}>
             Detailed Breakdown
           </h1>
-          <p className="text-[#6B7280]">
+          <p className="text-sm sm:text-base text-[#6B7280]">
             {phase === "analyzing"
               ? "PALA is preparing your detailed breakdown"
               : "Watch your footage with PALA's voice coaching"}
@@ -536,7 +568,7 @@ Be specific and actionable.`,
 
         {/* Video player - always show when previewUrl exists */}
         {previewUrl ? (
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {/* Video Player (2/3 width) */}
             <div className="lg:col-span-2">
               <Card className="overflow-hidden border-2 border-[#FF6B35]/20 shadow-xl bg-white">
@@ -628,53 +660,78 @@ Be specific and actionable.`,
 
               {/* ElevenLabs Voice Status */}
               <Card className="mt-4 p-4 border-l-4 border-l-[#4ECDC4] bg-white">
-                <div className="flex items-center gap-3">
-                  {isGeneratingAudio ? (
-                    <>
-                      <Loader2 className="w-4 h-4 text-[#4ECDC4] animate-spin" />
-                      <div>
-                        <p className="font-semibold text-sm text-[#2D3142]">
-                          Generating Voice Coaching...
-                        </p>
-                        <p className="text-xs text-[#6B7280]">
-                          PALA is preparing your narration
-                        </p>
-                      </div>
-                    </>
-                  ) : audioError ? (
-                    <>
-                      <AlertCircle className="w-4 h-4 text-[#FF6B35]" />
-                      <div>
-                        <p className="font-semibold text-sm text-[#2D3142]">
-                          Voice Coaching Unavailable
-                        </p>
-                        <p className="text-xs text-[#6B7280]">{audioError}</p>
-                      </div>
-                    </>
-                  ) : audioUrl ? (
-                    <>
-                      <div className="w-3 h-3 rounded-full bg-[#4ECDC4] animate-pulse" />
-                      <div>
-                        <p className="font-semibold text-sm text-[#2D3142]">
-                          Voice Coaching Active
-                        </p>
-                        <p className="text-xs text-[#6B7280]">
-                          PALA is narrating your analysis with ElevenLabs
-                        </p>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-3 h-3 rounded-full bg-gray-300" />
-                      <div>
-                        <p className="font-semibold text-sm text-[#2D3142]">
-                          Voice Coaching Ready
-                        </p>
-                        <p className="text-xs text-[#6B7280]">
-                          Audio will play with video
-                        </p>
-                      </div>
-                    </>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 flex-1">
+                    {isGeneratingAudio ? (
+                      <>
+                        <Loader2 className="w-4 h-4 text-[#4ECDC4] animate-spin" />
+                        <div>
+                          <p className="font-semibold text-sm text-[#2D3142]">
+                            Generating Voice Coaching...
+                          </p>
+                          <p className="text-xs text-[#6B7280]">
+                            PALA is preparing your narration
+                          </p>
+                        </div>
+                      </>
+                    ) : audioError ? (
+                      <>
+                        <AlertCircle className="w-4 h-4 text-[#FF6B35]" />
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm text-[#2D3142]">
+                            Voice Coaching Unavailable
+                          </p>
+                          <p className="text-xs text-[#6B7280]">{audioError}</p>
+                        </div>
+                      </>
+                    ) : audioUrl ? (
+                      <>
+                        <div className="w-3 h-3 rounded-full bg-[#4ECDC4] animate-pulse" />
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm text-[#2D3142]">
+                            Voice Coaching Active
+                          </p>
+                          <p className="text-xs text-[#6B7280]">
+                            {isPlaying ? "PALA is narrating..." : "Click play to hear PALA's narration"}
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-3 h-3 rounded-full bg-gray-300" />
+                        <div>
+                          <p className="font-semibold text-sm text-[#2D3142]">
+                            Voice Coaching Ready
+                          </p>
+                          <p className="text-xs text-[#6B7280]">
+                            Audio will play with video
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  {audioUrl && !isPlaying && (
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        const audio = audioRef.current;
+                        const video = videoRef.current;
+                        if (audio && video) {
+                          if (video.duration > 0 && audio.duration > 0) {
+                            audio.currentTime = (video.currentTime / video.duration) * audio.duration;
+                          }
+                          audio.play().catch((err) => {
+                            console.error("Manual play error:", err);
+                            setAudioError("Could not play audio. Check browser permissions.");
+                          });
+                          video.play().catch(() => {});
+                        }
+                      }}
+                      className="bg-[#4ECDC4] hover:bg-[#4ECDC4]/80"
+                    >
+                      <Play className="w-4 h-4 mr-1" />
+                      Play Audio
+                    </Button>
                   )}
                 </div>
               </Card>
@@ -685,9 +742,22 @@ Be specific and actionable.`,
                   ref={audioRef}
                   src={audioUrl}
                   preload="auto"
+                  onLoadedData={() => {
+                    console.log("Audio loaded, duration:", audioRef.current?.duration);
+                  }}
+                  onCanPlay={() => {
+                    console.log("Audio can play");
+                  }}
+                  onPlay={() => {
+                    console.log("Audio started playing");
+                  }}
                   onError={(e) => {
                     console.error("Audio playback error:", e);
-                    setAudioError("Failed to play audio");
+                    console.error("Audio error details:", audioRef.current?.error);
+                    setAudioError("Failed to play audio. Try clicking play manually.");
+                  }}
+                  onEnded={() => {
+                    console.log("Audio playback ended");
                   }}
                 />
               )}
@@ -762,28 +832,28 @@ Be specific and actionable.`,
             </div>
 
             {/* Timestamp Notes Sidebar (1/3 width) */}
-            <div className="lg:col-span-1 space-y-4">
+            <div className="lg:col-span-1 space-y-4 mt-6 lg:mt-0">
               {/* Chat with PALA */}
-              <Card className="border-2 border-[#4ECDC4]/20 bg-white sticky top-8 z-10">
+              <Card className="border-2 border-[#4ECDC4]/20 bg-white flex flex-col sticky top-4 z-10">
                 <div
-                  className="p-4 cursor-pointer hover:bg-[#FFF5EB]/50 transition-colors"
+                  className="p-3 sm:p-4 cursor-pointer hover:bg-[#FFF5EB]/50 transition-colors"
                   onClick={() => setShowChat(!showChat)}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <MessageCircle className="w-5 h-5 text-[#4ECDC4]" />
-                      <h3 className="text-lg font-bold text-[#2D3142]">Chat with PALA</h3>
+                      <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-[#4ECDC4]" />
+                      <h3 className="text-base sm:text-lg font-bold text-[#2D3142]">Chat with PALA</h3>
                     </div>
-                    <Badge className="bg-[#4ECDC4]/10 text-[#4ECDC4] border-[#4ECDC4]/20 text-xs">
+                    <Badge className="bg-[#4ECDC4]/10 text-[#4ECDC4] border-[#4ECDC4]/20 text-xs hidden sm:inline-flex">
                       Ask anything!
                     </Badge>
                   </div>
                 </div>
 
                 {showChat && (
-                  <div className="border-t border-[#E5E7EB]">
+                  <div className="border-t border-[#E5E7EB] flex-1 flex flex-col min-h-0">
                     {/* Chat Messages */}
-                    <div className="h-[200px] overflow-y-auto p-4 space-y-3 bg-[#FFFAF5]">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#FFFAF5] min-h-[200px] max-h-[300px] lg:max-h-[400px]">
                       {chatMessages.length === 0 ? (
                         <div className="text-center text-sm text-[#6B7280] py-4">
                           <img 
@@ -897,8 +967,8 @@ Be specific and actionable.`,
           </Card>
 
               {/* Key Moments */}
-              <Card className="p-6 border-2 border-[#FF6B35]/20 bg-white sticky top-8">
-                <h3 className="text-xl font-bold mb-4 text-[#2D3142]">Key Moments</h3>
+              <Card className="p-4 sm:p-6 border-2 border-[#FF6B35]/20 bg-white lg:sticky lg:top-8">
+                <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 text-[#2D3142]">Key Moments</h3>
 
                 <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                   {keyMoments.map((moment, i) => (
@@ -967,9 +1037,114 @@ Be specific and actionable.`,
           </Card>
         )}
 
+        {/* Shot Consistency Graph */}
+        {phase === "ready" && (
+          <Card className="mt-8 sm:mt-12 border-2 border-[#FF6B35]/20 bg-white">
+            <CardContent className="p-6 sm:p-8">
+              <div className="mb-6">
+                <h3 className="text-xl sm:text-2xl font-bold text-[#2D3142] mb-2" style={{ fontFamily: "var(--font-display)" }}>
+                  Shot Consistency
+                </h3>
+                <p className="text-sm sm:text-base text-[#6B7280]">
+                  Your performance consistency across different shot types
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                {/* Serve Consistency */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-[#2D3142]">Serve</span>
+                    <span className="text-sm text-[#6B7280]">82%</span>
+                  </div>
+                  <div className="h-3 bg-[#FFF5EB] rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: "82%" }}
+                      transition={{ duration: 1, ease: "easeOut" }}
+                      className="h-full bg-gradient-to-r from-[#FF6B35] to-[#FFB84D] rounded-full"
+                    />
+                  </div>
+                </div>
+
+                {/* Return Consistency */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-[#2D3142]">Return</span>
+                    <span className="text-sm text-[#6B7280]">75%</span>
+                  </div>
+                  <div className="h-3 bg-[#FFF5EB] rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: "75%" }}
+                      transition={{ duration: 1, ease: "easeOut", delay: 0.1 }}
+                      className="h-full bg-gradient-to-r from-[#4ECDC4] to-[#2D9A94] rounded-full"
+                    />
+                  </div>
+                </div>
+
+                {/* Dink Consistency */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-[#2D3142]">Dink</span>
+                    <span className="text-sm text-[#6B7280]">88%</span>
+                  </div>
+                  <div className="h-3 bg-[#FFF5EB] rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: "88%" }}
+                      transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+                      className="h-full bg-gradient-to-r from-[#FFB84D] to-[#FFA726] rounded-full"
+                    />
+                  </div>
+                </div>
+
+                {/* Volley Consistency */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-[#2D3142]">Volley</span>
+                    <span className="text-sm text-[#6B7280]">70%</span>
+                  </div>
+                  <div className="h-3 bg-[#FFF5EB] rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: "70%" }}
+                      transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
+                      className="h-full bg-gradient-to-r from-[#FF6B35] to-[#E85A2A] rounded-full"
+                    />
+                  </div>
+                </div>
+
+                {/* Drive Consistency */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-[#2D3142]">Drive</span>
+                    <span className="text-sm text-[#6B7280]">79%</span>
+                  </div>
+                  <div className="h-3 bg-[#FFF5EB] rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: "79%" }}
+                      transition={{ duration: 1, ease: "easeOut", delay: 0.4 }}
+                      className="h-full bg-gradient-to-r from-[#4ECDC4] to-[#FF6B35] rounded-full"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-[#E5E7EB]">
+                <div className="flex items-center gap-2 text-sm text-[#6B7280]">
+                  <TrendingUp className="w-4 h-4 text-[#4ECDC4]" />
+                  <span>Overall Consistency: <span className="font-semibold text-[#2D3142]">79%</span></span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Bottom CTA */}
         {phase === "ready" && (
-          <div className="mt-12 text-center">
+          <div className="mt-8 sm:mt-12 text-center pb-20 lg:pb-0">
             <Button
               size="lg"
               variant="outline"

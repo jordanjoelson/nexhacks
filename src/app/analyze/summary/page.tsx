@@ -170,7 +170,7 @@ export default function SummaryPage() {
   const weaknessPoints = useMemo(() => analysisPoints.filter((p) => p.type === "weakness"), [analysisPoints]);
 
   const handleTypingComplete = useCallback(() => {
-    // Mark complete immediately; then swap to bullets/points after a beat
+    // Mark complete and show points, but keep summary visible
     setTypingComplete(true);
     setTimeout(() => setPhase("points"), 500);
   }, []);
@@ -280,29 +280,29 @@ IMPORTANT: Make the summary VERY DETAILED and comprehensive. Keep bullet points 
   }, [file]);
 
   return (
-    <div className="min-h-screen bg-[#FFFAF5] p-6">
+    <div className="min-h-screen bg-[#FFFAF5] p-4 sm:p-6">
       <div className="max-w-4xl mx-auto">
         {/* IDENTICAL header block */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold mb-4 text-[#2D3142]" style={{ fontFamily: "var(--font-display)" }}>
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 text-[#2D3142] px-4" style={{ fontFamily: "var(--font-display)" }}>
             Analysis Summary
           </h1>
-          <p className="text-xl text-[#6B7280]">
+          <p className="text-base sm:text-lg lg:text-xl text-[#6B7280] px-4">
             {phase === "analyzing" ? "PALA is analyzing your pickleball footage" : "PALA has analyzed your pickleball footage"}
           </p>
         </div>
 
         {/* IDENTICAL main Card shell (border-dashed + orange) */}
         <Card className="border-2 border-dashed border-[#FF6B35] bg-white shadow-xl">
-          <CardContent className="p-12">
-            <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6">
+          <CardContent className="p-6 sm:p-8 lg:p-12">
+            <div className="flex flex-col items-center justify-center min-h-[300px] sm:min-h-[400px] space-y-4 sm:space-y-6">
               {/* Status row */}
               {phase === "analyzing" && (
                 <div className="text-center space-y-4">
-                  <Loader2 className="w-16 h-16 text-[#FF6B35] animate-spin mx-auto" />
+                  <Loader2 className="w-12 h-12 sm:w-16 sm:h-16 text-[#FF6B35] animate-spin mx-auto" />
                   <div>
-                    <p className="text-2xl font-bold text-[#2D3142] mb-2">Processing...</p>
-                    <p className="text-[#6B7280]">PALA is analyzing your video</p>
+                    <p className="text-xl sm:text-2xl font-bold text-[#2D3142] mb-2">Processing...</p>
+                    <p className="text-sm sm:text-base text-[#6B7280]">PALA is analyzing your video</p>
                   </div>
                 </div>
               )}
@@ -319,7 +319,7 @@ IMPORTANT: Make the summary VERY DETAILED and comprehensive. Keep bullet points 
                   </div>
 
                   <div className="mt-2 p-4 bg-[#FFF5EB] rounded-lg border border-[#FFB84D]/20">
-                    <VideoPlayer videoUrl={previewUrl} />
+                    <VideoPlayer videoUrl={previewUrl} autoPlay={true} />
                   </div>
                 </div>
               )}
@@ -356,12 +356,11 @@ IMPORTANT: Make the summary VERY DETAILED and comprehensive. Keep bullet points 
                 </div>
               )}
 
-              {/* Points: ONLY appear after typing completes (or skip) */}
+              {/* Points: Show above summary after typing completes (or skip) */}
               {phase === "points" && typingComplete && (
                 <div className="w-full space-y-6">
-                  {/* ✅ Summary removed — bullets replace it */}
-
-                  <div className="grid md:grid-cols-2 gap-6">
+                  {/* Strengths and Areas to Improve - shown above summary */}
+                  <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
                     <Card className="bg-gradient-to-br from-[#4ECDC4]/10 to-white border-[#4ECDC4]/20">
                       <CardContent className="p-6">
                         <div className="flex items-center gap-2 mb-4">
@@ -400,6 +399,21 @@ IMPORTANT: Make the summary VERY DETAILED and comprehensive. Keep bullet points 
                     </Card>
                   </div>
 
+                  {/* Summary text - shown below strengths/weaknesses */}
+                  {summaryText && (
+                    <div className="w-full">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Sparkles className="w-5 h-5 text-[#FF6B35]" />
+                        <p className="font-bold text-[#2D3142]">Detailed Analysis</p>
+                      </div>
+                      <div className="p-4 bg-[#FFF5EB] rounded-lg border border-[#FFB84D]/20">
+                        <p className="text-[#2D3142] leading-relaxed whitespace-pre-wrap">
+                          {summaryText}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex justify-center pt-2">
                     <Button
                       size="lg"
@@ -429,7 +443,7 @@ IMPORTANT: Make the summary VERY DETAILED and comprehensive. Keep bullet points 
         </Card>
 
         {/* Bottom grid */}
-        <div className="grid md:grid-cols-3 gap-6 mt-12">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-8 sm:mt-12">
           <Card className="bg-white border-[#FFB84D]/20">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">

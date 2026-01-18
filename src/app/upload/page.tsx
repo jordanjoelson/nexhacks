@@ -66,54 +66,54 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFAF5] p-6">
+    <div className="min-h-screen bg-[#FFFAF5] p-4 sm:p-6">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <Button
             variant="ghost"
             onClick={() => router.push("/")}
-            className="mb-4 hover:bg-[#FF6B35]/10 text-[#6B7280] hover:text-[#2D3142]"
+            className="mb-4 hover:bg-[#FF6B35]/10 text-[#6B7280] hover:text-[#2D3142] text-sm sm:text-base"
           >
             <ArrowLeft className="mr-2 w-4 h-4" />
             Back to Home
           </Button>
         </div>
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold mb-4 text-[#2D3142]" style={{ fontFamily: "var(--font-display)" }}>
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 text-[#2D3142] px-4" style={{ fontFamily: "var(--font-display)" }}>
             Upload Your Game
           </h1>
-          <p className="text-xl text-[#6B7280]">
+          <p className="text-base sm:text-lg lg:text-xl text-[#6B7280] px-4">
             Let PALA analyze your pickleball footage
           </p>
         </div>
 
         <Card className="border-2 border-dashed border-[#FF6B35] bg-white shadow-xl">
-          <CardContent className="p-12">
+          <CardContent className="p-6 sm:p-8 lg:p-12">
             <div
               onDrop={handleDrop}
               onDragOver={handleDragOver}
-              className="flex flex-col items-center justify-center min-h-[400px] space-y-6"
+              className="flex flex-col items-center justify-center min-h-[300px] sm:min-h-[400px] space-y-4 sm:space-y-6"
             >
               {isUploading ? (
                 <div className="text-center space-y-4">
-                  <Loader2 className="w-16 h-16 text-[#FF6B35] animate-spin mx-auto" />
+                  <Loader2 className="w-12 h-12 sm:w-16 sm:h-16 text-[#FF6B35] animate-spin mx-auto" />
                   <div>
-                    <p className="text-2xl font-bold text-[#2D3142] mb-2">
+                    <p className="text-xl sm:text-2xl font-bold text-[#2D3142] mb-2">
                       Processing...
                     </p>
-                    <p className="text-[#6B7280]">Uploading your video to PALA</p>
+                    <p className="text-sm sm:text-base text-[#6B7280]">Uploading your video to PALA</p>
                   </div>
                 </div>
               ) : (
                 <>
-                  <div className="w-20 h-20 rounded-full bg-[#FF6B35]/10 flex items-center justify-center">
-                    <Upload className="w-10 h-10 text-[#FF6B35]" />
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#FF6B35]/10 flex items-center justify-center">
+                    <Upload className="w-8 h-8 sm:w-10 sm:h-10 text-[#FF6B35]" />
                   </div>
-                  <div className="text-center space-y-2">
-                    <h3 className="text-2xl font-bold text-[#2D3142]">
+                  <div className="text-center space-y-2 px-4">
+                    <h3 className="text-xl sm:text-2xl font-bold text-[#2D3142]">
                       Drag & Drop Video
                     </h3>
-                    <p className="text-[#6B7280]">
+                    <p className="text-sm sm:text-base text-[#6B7280]">
                       or click to browse • MP4, MOV, AVI (max 500MB)
                     </p>
                   </div>
@@ -123,10 +123,10 @@ export default function UploadPage() {
               {!isUploading && (
                 <Button
                   size="lg"
-                  className="bg-[#FF6B35] hover:bg-[#E85A2A] text-lg px-8"
+                  className="bg-[#FF6B35] hover:bg-[#E85A2A] text-base sm:text-lg px-6 sm:px-8 w-full sm:w-auto"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <Video className="mr-2 w-5 h-5" />
+                  <Video className="mr-2 w-4 h-4 sm:w-5 sm:h-5" />
                   Select Video File
                 </Button>
               )}
@@ -170,7 +170,7 @@ export default function UploadPage() {
           </CardContent>
         </Card>
 
-        <div className="grid md:grid-cols-3 gap-6 mt-12">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-8 sm:mt-12">
           <Card className="bg-white border-[#FFB84D]/20">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">

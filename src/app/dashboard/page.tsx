@@ -51,23 +51,23 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FFFAF5] to-[#FFF5EB] px-6 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-[#FFFAF5] to-[#FFF5EB] px-4 sm:px-6 py-8 sm:py-12">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-12">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 sm:mb-12 gap-4">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-5xl font-bold text-[#2D3142]" style={{ fontFamily: "var(--font-display)" }}>
+            <div className="flex items-center gap-2 sm:gap-3 mb-2">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#2D3142]" style={{ fontFamily: "var(--font-display)" }}>
                 Your Coaching Sessions
               </h1>
-              <Sparkles className="w-8 h-8 text-[#FF6B35] animate-pulse" />
+              <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-[#FF6B35] animate-pulse flex-shrink-0" />
             </div>
-            <p className="text-xl text-[#6B7280]">
+            <p className="text-base sm:text-lg lg:text-xl text-[#6B7280]">
               Review your progress and past analyses 🏓
             </p>
           </div>
           <Button
             size="lg"
-            className="bg-[#FF6B35] hover:bg-[#E85A2A] shadow-lg hover:shadow-xl transition-all"
+            className="bg-[#FF6B35] hover:bg-[#E85A2A] shadow-lg hover:shadow-xl transition-all w-full sm:w-auto"
             onClick={() => router.push("/upload")}
           >
             <Plus className="mr-2" />

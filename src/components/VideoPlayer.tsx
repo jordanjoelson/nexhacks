@@ -9,6 +9,7 @@ interface VideoPlayerProps {
   className?: string;
   showControls?: boolean;
   videoRef?: React.RefObject<HTMLVideoElement>;
+  autoPlay?: boolean;
 }
 
 export default function VideoPlayer({
@@ -18,6 +19,7 @@ export default function VideoPlayer({
   className = "",
   showControls = true,
   videoRef: externalVideoRef,
+  autoPlay = false,
 }: VideoPlayerProps) {
   const internalVideoRef = useRef<HTMLVideoElement>(null);
   const videoRef = externalVideoRef || internalVideoRef;
@@ -118,6 +120,34 @@ export default function VideoPlayer({
     }
   }, [videoUrl]);
 
+  // Auto-play when enabled and video is ready
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !autoPlay || !videoUrl) return;
+
+    const handleCanPlay = async () => {
+      try {
+        await video.play();
+        setIsPlaying(true);
+      } catch (error) {
+        // Auto-play might be blocked by browser policy
+        // User interaction may be required
+        console.log("Auto-play prevented by browser:", error);
+      }
+    };
+
+    if (video.readyState >= 3) {
+      // Video is already loaded enough to play
+      handleCanPlay();
+    } else {
+      video.addEventListener("canplay", handleCanPlay, { once: true });
+    }
+
+    return () => {
+      video.removeEventListener("canplay", handleCanPlay);
+    };
+  }, [autoPlay, videoUrl]);
+
   return (
     <div className={`relative w-full h-full ${className}`}>
       <video
@@ -125,6 +155,7 @@ export default function VideoPlayer({
         className="w-full h-full object-contain border border-gray-200 rounded-lg"
         controls={showControls}
         preload="metadata"
+        playsInline
       />
       
       {!showControls && (
