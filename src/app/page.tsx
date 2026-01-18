@@ -35,7 +35,7 @@ export default function Home() {
       apiUrl: apiUrl,
       apiKey: apiKey || "",
       prompt:
-        "Describe what you see in the video. List all objects, people, animals, and actions in a simple, concise format. Example: '1 dog, 2 cats walking' or 'A person reading a book, 3 cars in the background'. Be specific and count items when possible.",
+        "You are analyzing a pickleball game. Describe what you see in real-time. Focus on: number of players, ball position, player positions on court, serves, rallies, ball hits, player movements, and game actions. Use simple, concise format like '2 players, ball in play, player serving' or '4 players, ball on left side, rally in progress'. Count players and describe ball location and game state.",
       onResult: (result) => {
         setLatestResult(result);
         setError(null); // Clear any previous errors on success
