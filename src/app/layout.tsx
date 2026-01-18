@@ -30,6 +30,7 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${plusJakarta.variable} ${bricolage.variable} antialiased`}
+        suppressHydrationWarning
       >
         {children}
       </body>

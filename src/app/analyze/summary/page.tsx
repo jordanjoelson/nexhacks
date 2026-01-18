@@ -39,47 +39,96 @@ function SimpleTypingAnimation({
   skip?: boolean;
 }) {
   const [displayText, setDisplayText] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
   const indexRef = useRef(0);
-  const completedRef = useRef(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const onCompleteRef = useRef(onComplete);
+  const textKeyRef = useRef(0);
+
+  // Keep refs in sync
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
-    // If user skips, instantly complete
-    if (skip) {
-      setDisplayText(text);
-      indexRef.current = text.length;
+    console.log("SimpleTypingAnimation effect triggered", { text: text?.substring(0, 50), skip, textLength: text?.length });
+    
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
 
-      if (!completedRef.current) {
-        completedRef.current = true;
-        onComplete();
-      }
+    // Increment key when text changes to force reset
+    textKeyRef.current += 1;
+
+    // If no text, reset everything
+    if (!text || text.length === 0) {
+      console.log("No text, resetting");
+      setDisplayText("");
+      setIsTyping(false);
+      indexRef.current = 0;
       return;
     }
 
-    completedRef.current = false;
+    // If user skips, instantly complete
+    if (skip) {
+      console.log("Skip enabled, showing full text");
+      setDisplayText(text);
+      setIsTyping(false);
+      indexRef.current = text.length;
+      onCompleteRef.current();
+      return;
+    }
+
+    // Always reset and start fresh when text changes
+    console.log("Starting typing animation", text.length, "characters");
     indexRef.current = 0;
     setDisplayText("");
+    setIsTyping(true);
 
-    const interval = setInterval(() => {
-      if (indexRef.current < text.length) {
-        setDisplayText(text.substring(0, indexRef.current + 1));
-        indexRef.current++;
-      } else {
-        clearInterval(interval);
-
-        if (!completedRef.current) {
-          completedRef.current = true;
-          onComplete();
+    // Start typing animation with a small delay to ensure state is set
+    const startTyping = () => {
+      console.log("Starting interval for typing");
+      let currentIndex = 0;
+      
+      const typeNextChar = () => {
+        if (currentIndex < text.length) {
+          currentIndex++;
+          setDisplayText(text.substring(0, currentIndex));
+          indexRef.current = currentIndex;
+          timeoutRef.current = setTimeout(typeNextChar, speed);
+        } else {
+          // Typing complete
+          console.log("Typing complete");
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+          }
+          setIsTyping(false);
+          onCompleteRef.current();
         }
-      }
-    }, speed);
+      };
+      
+      timeoutRef.current = setTimeout(typeNextChar, speed);
+    };
 
-    return () => clearInterval(interval);
-  }, [text, speed, onComplete, skip]);
+    // Small delay to ensure component is ready
+    const initialTimeoutId = setTimeout(startTyping, 50);
+    
+    return () => {
+      clearTimeout(initialTimeoutId);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
+  }, [text, speed, skip]);
 
   return (
     <p className="text-[#2D3142] leading-relaxed whitespace-pre-wrap">
       {displayText}
-      {!skip && indexRef.current < text.length && (
+      {isTyping && (
         <span className="inline-block w-2 h-5 bg-[#FF6B35] ml-1 animate-pulse" />
       )}
     </p>
@@ -94,10 +143,19 @@ interface AnalysisPoint {
 
 // Parse structured analysis from Overshoot
 function parseStructuredAnalysis(text: string): { summary: string; points: AnalysisPoint[] } {
+  console.log("parseStructuredAnalysis called with text length:", text.length);
+  
+  if (!text || text.trim().length === 0) {
+    console.log("Empty text provided to parser");
+    return { summary: "", points: [] };
+  }
+
   const lines = text
     .split("\n")
     .map((l) => l.trim())
     .filter((l) => l);
+
+  console.log("Parsing", lines.length, "lines");
 
   const summary: string[] = [];
   const points: AnalysisPoint[] = [];
@@ -137,6 +195,7 @@ function parseStructuredAnalysis(text: string): { summary: string; points: Analy
         weaknessCount++;
       }
     } else if (!inStrengths && !inWeaknesses) {
+      // Collect summary lines (everything before strengths/weaknesses sections)
       summary.push(line);
     }
   }
@@ -146,7 +205,14 @@ function parseStructuredAnalysis(text: string): { summary: string; points: Analy
     ...points.filter((p) => p.type === "weakness").slice(0, 3),
   ];
 
-  return { summary: summary.join(" "), points: limitedPoints };
+  const summaryText = summary.join(" ").trim();
+  
+  // If no structured summary found, use the entire text (up to first strength/weakness section)
+  const finalSummary = summaryText || text.split(/strength|weakness|improvement/i)[0]?.trim() || text.trim();
+  
+  console.log("Parser result - summary length:", finalSummary.length, "points:", limitedPoints.length);
+  
+  return { summary: finalSummary, points: limitedPoints };
 }
 
 export default function SummaryPage() {
@@ -226,8 +292,10 @@ export default function SummaryPage() {
 IMPORTANT: Make the summary VERY DETAILED and comprehensive. Keep bullet points SHORT (max 8 words).`,
           source: { type: "video", file },
           onResult: (result) => {
+            console.log("Received result:", result.result?.substring(0, 100));
             if (result.result?.trim()) {
               resultsRef.current.push(result);
+              console.log("Total results collected:", resultsRef.current.length);
             }
           },
           onError: (err) => console.error("Overshoot error:", err),
@@ -239,15 +307,27 @@ IMPORTANT: Make the summary VERY DETAILED and comprehensive. Keep bullet points 
         analysisTimeoutRef.current = setTimeout(() => {
           vision.stop();
 
+          console.log("Analysis timeout reached. Results count:", resultsRef.current.length);
+          console.log("Raw results:", resultsRef.current);
+
           const fullText = resultsRef.current
             .map((r) => r.result)
             .filter((r) => r && r.trim())
             .join(" ");
 
+          console.log("Full text length:", fullText.length);
+          console.log("Full text preview:", fullText.substring(0, 200));
+
           const parsed = parseStructuredAnalysis(fullText);
 
+          console.log("Parsed summary length:", parsed.summary?.length || 0);
+          console.log("Parsed points count:", parsed.points.length);
+
           const finalSummary =
-            parsed.summary || "Analysis complete. Here are the key findings from your pickleball video.";
+            parsed.summary || fullText || "Analysis complete. Here are the key findings from your pickleball video.";
+
+          console.log("Final summary length:", finalSummary.length);
+          console.log("Final summary:", finalSummary.substring(0, 100));
 
           setSummaryText(finalSummary);
           setAnalysisPoints(parsed.points);
@@ -365,14 +445,13 @@ IMPORTANT: Make the summary VERY DETAILED and comprehensive. Keep bullet points 
                   </div>
 
                   <div className="p-4 bg-[#FFF5EB] rounded-lg border border-[#FFB84D]/20">
-                    <div key={`typing-${typingKey}`}>
-                      <SimpleTypingAnimation
-                        text={summaryText}
-                        speed={15}
-                        onComplete={handleTypingComplete}
-                        skip={skipTyping}
-                      />
-                    </div>
+                    <SimpleTypingAnimation
+                      key={`typing-${typingKey}`}
+                      text={summaryText}
+                      speed={15}
+                      onComplete={handleTypingComplete}
+                      skip={skipTyping}
+                    />
                   </div>
                 </div>
               )}
