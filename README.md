@@ -10,15 +10,30 @@ Dependencies are already installed, but if you need to reinstall:
 npm install
 ```
 
-### 2. Configure API Key
+### 2. Configure API Key and Endpoint
 
 Create a `.env.local` file in the root directory:
 
 ```bash
 NEXT_PUBLIC_OVERSHOOT_API_KEY=your-api-key-here
+NEXT_PUBLIC_OVERSHOOT_API_URL=https://api.overshoot.ai
 ```
 
 Replace `your-api-key-here` with your actual Overshoot API key.
+
+**API URL Note:** Some accounts may use a different endpoint format:
+- Default: `https://api.overshoot.ai`
+- Alternative: `https://cluster1.overshoot.ai/api/v0.2`
+
+If you're getting network errors, try setting `NEXT_PUBLIC_OVERSHOOT_API_URL` to the correct endpoint for your account. Check your Overshoot dashboard or documentation for the correct URL.
+
+**Note:** For server-side API route testing, you can also use:
+```bash
+OVERSHOOT_API_KEY=your-api-key-here
+OVERSHOOT_API_URL=https://api.overshoot.ai
+```
+
+The `NEXT_PUBLIC_` prefix makes the variable available in the browser (required for the SDK).
 
 ### 3. Run the Development Server
 
@@ -42,6 +57,27 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 - Video file processing support
 - Structured JSON output support
 - Dynamic prompt updates
+
+## Troubleshooting
+
+### Network/CORS Errors
+
+If you encounter "NetworkError when attempting to fetch resource", this is typically a CORS (Cross-Origin Resource Sharing) issue.
+
+**The Problem:**
+The Overshoot SDK connects directly from your browser to `https://api.overshoot.ai`. Browsers block cross-origin requests unless the server explicitly allows them via CORS headers.
+
+**Solutions:**
+
+1. **Verify API CORS Support**: The Overshoot API should support CORS for browser clients. If you're getting CORS errors, contact Overshoot support to ensure CORS is enabled.
+
+2. **Use HTTPS**: Some APIs require HTTPS. Try deploying to Vercel/Netlify for testing, or use HTTPS locally.
+
+3. **Check Browser Console**: Open browser DevTools (F12) and check the Console/Network tabs for detailed CORS error messages.
+
+4. **Test Connection**: Use the "Test Connection" button in the app - it uses a server-side API route that bypasses CORS for testing purposes.
+
+**Note:** The SDK requires direct browser-to-API connections for WebSocket and WebRTC, so CORS must be properly configured on the API side.
 
 ## Overshoot SDK
 
