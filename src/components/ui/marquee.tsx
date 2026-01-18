@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@/lib/utils"
 
 interface MarqueeProps {
@@ -19,11 +21,13 @@ export default function Marquee({
   repeat = 2,
   ...props
 }: MarqueeProps) {
+  const duration = "40s";
+  
   return (
     <div
       {...props}
       className={cn(
-        "group flex overflow-hidden [--duration:40s] [--gap:1rem]",
+        "group flex overflow-hidden",
         {
           "flex-row": !vertical,
           "flex-col": vertical,
@@ -32,25 +36,27 @@ export default function Marquee({
       )}
     >
       <div
-        className={cn("flex shrink-0 [gap:var(--gap)] will-change-transform", {
-          "flex-row": !vertical,
-          "flex-col": vertical,
-          "animate-marquee": !vertical && !reverse,
-          "animate-marquee-reverse": !vertical && reverse,
-          "animate-marquee-vertical": vertical,
-          "group-hover:[animation-play-state:paused]": pauseOnHover,
-        })}
+        className={cn(
+          "flex shrink-0 gap-4 will-change-transform",
+          {
+            "flex-row": !vertical,
+            "flex-col": vertical,
+          }
+        )}
         style={{
-          animationDuration: "var(--duration)",
-          animationIterationCount: "infinite",
-          animationTimingFunction: "linear",
+          animation: !vertical && !reverse
+            ? `marquee ${duration} linear infinite`
+            : !vertical && reverse
+            ? `marquee-reverse ${duration} linear infinite`
+            : "none",
+          animationPlayState: pauseOnHover ? "paused" : "running",
         }}
       >
         {/* First set of content */}
         {Array(repeat)
           .fill(0)
           .map((_, i) => (
-            <div key={`first-${i}`} className="flex shrink-0 [gap:var(--gap)]">
+            <div key={`first-${i}`} className="flex shrink-0 gap-4">
               {children}
             </div>
           ))}
@@ -58,7 +64,7 @@ export default function Marquee({
         {Array(repeat)
           .fill(0)
           .map((_, i) => (
-            <div key={`second-${i}`} className="flex shrink-0 [gap:var(--gap)]">
+            <div key={`second-${i}`} className="flex shrink-0 gap-4">
               {children}
             </div>
           ))}

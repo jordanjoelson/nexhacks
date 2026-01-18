@@ -26,7 +26,6 @@ Your dinking consistency is solid, maintaining good control at the net. However,
 
 Overall, your game demonstrates strong fundamentals with clear pathways for advancement. Focus on the footwork drills I'll show you in the video breakdown, and you'll see immediate improvements in your court positioning and shot preparation.`;
 
-  // Typing effect
   useEffect(() => {
     if (currentIndex < fullAnalysisText.length) {
       const timeout = setTimeout(() => {
@@ -63,7 +62,6 @@ Overall, your game demonstrates strong fundamentals with clear pathways for adva
   return (
     <div className="min-h-screen bg-[#FFFAF5] p-6">
       <div className="max-w-5xl mx-auto space-y-8">
-        {/* Status Header */}
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3">
             <Loader2 className="w-6 h-6 text-[#FF6B35] animate-spin" />
@@ -74,7 +72,6 @@ Overall, your game demonstrates strong fundamentals with clear pathways for adva
           <p className="text-xl text-[#6B7280]">PALA is Watching...</p>
         </div>
 
-        {/* Live Typing Analysis Card */}
         <Card className="border-2 border-[#FFB84D]/20 bg-white shadow-xl">
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -87,7 +84,6 @@ Overall, your game demonstrates strong fundamentals with clear pathways for adva
           </CardHeader>
 
           <CardContent>
-            {/* Typing Effect */}
             <div className="min-h-[300px]">
               <p className="text-[#2D3142] leading-relaxed whitespace-pre-wrap">
                 {displayedText}
@@ -99,7 +95,6 @@ Overall, your game demonstrates strong fundamentals with clear pathways for adva
           </CardContent>
         </Card>
 
-        {/* Key Insights Grid */}
         <div className="grid md:grid-cols-3 gap-6">
           <Card className="bg-gradient-to-br from-[#4ECDC4]/10 to-white border-[#4ECDC4]/20">
             <CardHeader>
@@ -159,7 +154,6 @@ Overall, your game demonstrates strong fundamentals with clear pathways for adva
           </Card>
         </div>
 
-        {/* CTA Button */}
         {!isTyping && (
           <div className="flex justify-center pt-8">
             <Button

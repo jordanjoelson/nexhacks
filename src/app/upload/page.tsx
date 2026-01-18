@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Upload, Video, CheckCircle, Loader2, Camera, Move, Play } from "lucide-react";
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -61,7 +61,6 @@ export default function UploadPage() {
   return (
     <div className="min-h-screen bg-[#FFFAF5] p-6">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold mb-4 text-[#2D3142]" style={{ fontFamily: "var(--font-display)" }}>
             Upload Your Game
@@ -71,7 +70,6 @@ export default function UploadPage() {
           </p>
         </div>
 
-        {/* Upload Card */}
         <Card className="border-2 border-dashed border-[#FF6B35] bg-white shadow-xl">
           <CardContent className="p-12">
             <div
@@ -96,7 +94,7 @@ export default function UploadPage() {
                   </div>
                   <div className="text-center space-y-2">
                     <h3 className="text-2xl font-bold text-[#2D3142]">
-                      {selectedFile ? "Drag & Drop Video" : "Drag & Drop Video"}
+                      Drag & Drop Video
                     </h3>
                     <p className="text-[#6B7280]">
                       or click to browse • MP4, MOV, AVI (max 500MB)
@@ -124,7 +122,6 @@ export default function UploadPage() {
                 className="hidden"
               />
 
-              {/* Upload progress */}
               {isUploading && (
                 <div className="w-full max-w-md space-y-2">
                   <div className="h-3 bg-[#FFF5EB] rounded-full overflow-hidden">
@@ -156,7 +153,6 @@ export default function UploadPage() {
           </CardContent>
         </Card>
 
-        {/* Tips Section */}
         <div className="grid md:grid-cols-3 gap-6 mt-12">
           <Card className="bg-white border-[#FFB84D]/20">
             <CardContent className="p-6">

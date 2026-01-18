@@ -9,8 +9,6 @@ const plusJakarta = Plus_Jakarta_Sans({
   display: "swap",
 });
 
-// Using Plus Jakarta Sans for headings too (Bricolage Grotesque alternative)
-// In production, you could add Bricolage Grotesque via @fontsource if needed
 const bricolage = Plus_Jakarta_Sans({
   variable: "--font-display",
   subsets: ["latin", "latin-ext"],

@@ -9,12 +9,13 @@ import {
   Sparkles,
   Video,
   TrendingUp,
-  CheckCircle,
   Zap,
   Play,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import Image from "next/image";
+import { AnimatedSVGUnderline } from "@/components/ui/animated-svg-underline";
+import { motion } from "framer-motion";
 
 const palaReviews = [
   {
@@ -124,11 +125,6 @@ export default function Home() {
           </div>
 
           <div className="relative z-10 text-center max-w-4xl mx-auto">
-            <Badge className="mb-6 bg-[#FFB84D]/20 text-[#E85A2A] border-[#FFB84D] hover:bg-[#FFB84D]/30 hover:text-[#E85A2A]">
-              <Sparkles className="w-3 h-3 mr-2" />
-              AI-Powered Coaching
-            </Badge>
-
             <h1 className="text-7xl font-black mb-6 text-[#2D3142] leading-tight" style={{ fontFamily: "var(--font-display)" }}>
               Your Pickleball Pal,
               <br />
@@ -156,10 +152,26 @@ export default function Home() {
               </Button>
             </div>
 
-            {/* Hero visual placeholder */}
-            <div className="mt-16 rounded-2xl bg-gradient-to-br from-[#FFF5EB] to-[#FFFAF5] p-8 border-2 border-[#FFB84D]/20 shadow-xl">
-              <div className="aspect-video bg-[#4ECDC4]/10 rounded-xl flex items-center justify-center">
-                <Video className="w-24 h-24 text-[#4ECDC4]" />
+            {/* Hero video embed */}
+            <div className="mt-16 rounded-2xl bg-gradient-to-br from-[#FFF5EB] to-[#FFFAF5] p-8 border-2 border-[#FFB84D]/20 shadow-xl relative">
+              {/* Pickleball image in top right corner */}
+              <div className="absolute -top-10 -right-6 z-50">
+                <img 
+                  src="/pickball.png" 
+                  alt="Pickleball" 
+                  className="w-28 h-28 object-contain drop-shadow-lg"
+                />
+              </div>
+              <div className="aspect-video rounded-xl overflow-hidden">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  src="https://www.youtube.com/embed/XiMNP5voSE4"
+                  title="PALA Demo Video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="w-full h-full"
+                />
               </div>
             </div>
           </div>
@@ -230,7 +242,11 @@ export default function Home() {
               Community Love
             </Badge>
             <h2 className="text-5xl font-bold mb-4 text-[#2D3142]" style={{ fontFamily: "var(--font-display)" }}>
-              Players Love PALA
+              Players Love{" "}
+              <span className="relative inline-block">
+                PALA
+                <AnimatedSVGUnderline color="#FF6B35" />
+              </span>
             </h2>
             <p className="text-xl text-[#6B7280] max-w-2xl mx-auto">
               Join thousands of pickleball enthusiasts getting better every day

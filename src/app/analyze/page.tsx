@@ -79,7 +79,17 @@ export default function AnalyzePage() {
                   Change Video
                 </button>
               </div>
-              <VideoPlayer videoUrl={videoUrl} />
+              <div className="relative">
+                <VideoPlayer videoUrl={videoUrl} />
+                {/* Pala logo in top right corner of video */}
+                <div className="absolute top-4 right-4 z-50 pointer-events-none">
+                  <img 
+                    src="/pala.png" 
+                    alt="PALA" 
+                    className="w-20 h-20 object-contain drop-shadow-lg"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="flex gap-4">

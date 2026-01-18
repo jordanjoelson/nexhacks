@@ -124,7 +124,6 @@ export default function FootagePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#FFFAF5] to-[#FFF5EB] px-6 py-12">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
           <Button
             variant="ghost"
@@ -143,10 +142,16 @@ export default function FootagePage() {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Video Player (2/3 width) */}
           <div className="lg:col-span-2">
-            <Card className="overflow-hidden border-2 border-[#FF6B35]/20 shadow-xl bg-white">
-              {/* Video Container */}
+            <Card className="relative overflow-visible border-2 border-[#FF6B35]/20 shadow-xl bg-white">
+              {/* Pala logo on top right border, rotated slightly */}
+              <div className="absolute -top-[5rem] -right-6 z-50 pointer-events-none">
+                <img 
+                  src="/pala.png" 
+                  alt="PALA" 
+                  className="w-40 h-40 object-contain drop-shadow-lg rotate-12"
+                />
+              </div>
               <div className="relative aspect-video bg-black">
                 <video
                   ref={videoRef}
@@ -155,7 +160,6 @@ export default function FootagePage() {
                   onTimeUpdate={handleTimeUpdate}
                 />
 
-                {/* Overlay Annotations */}
                 <div className="absolute inset-0 pointer-events-none">
                   {annotations.map((annotation, i) => (
                     <div
@@ -176,7 +180,6 @@ export default function FootagePage() {
                   ))}
                 </div>
 
-                {/* Play Button Overlay */}
                 {!isPlaying && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                     <Button
@@ -190,7 +193,6 @@ export default function FootagePage() {
                 )}
               </div>
 
-              {/* Video Controls */}
               <div className="p-4 bg-[#FFF5EB]/50 border-t border-[#FF6B35]/10">
                 <div className="flex items-center gap-4">
                   <Button variant="ghost" size="sm" onClick={togglePlay}>
@@ -201,7 +203,6 @@ export default function FootagePage() {
                     )}
                   </Button>
 
-                  {/* Progress Bar */}
                   <div className="flex-1 relative h-2 bg-[#E5E7EB] rounded-full cursor-pointer group">
                     <div
                       className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#FF6B35] to-[#4ECDC4] rounded-full transition-all"
@@ -235,7 +236,6 @@ export default function FootagePage() {
               </div>
             </Card>
 
-            {/* ElevenLabs Voice Status */}
             <Card className="mt-4 p-4 border-l-4 border-l-[#4ECDC4] bg-white">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-[#4ECDC4] animate-pulse" />
@@ -251,7 +251,6 @@ export default function FootagePage() {
             </Card>
           </div>
 
-          {/* Timestamp Notes Sidebar (1/3 width) */}
           <div className="lg:col-span-1">
             <Card className="p-6 border-2 border-[#FF6B35]/20 bg-white sticky top-8">
               <h3 className="text-xl font-bold mb-4 text-[#2D3142]">Key Moments</h3>
@@ -297,7 +296,6 @@ export default function FootagePage() {
           </div>
         </div>
 
-        {/* Bottom CTA */}
         <div className="mt-12 text-center">
           <Button
             size="lg"

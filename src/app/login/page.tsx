@@ -20,9 +20,8 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#FFFAF5] flex items-center justify-center p-6">
-      <Card className="w-full max-w-md border-2 border-[#FFB84D]/20 shadow-xl">
+      <Card className="w-full max-w-md border-2 border-[#FFB84D]/20 shadow-xl bg-white">
         <CardHeader className="text-center space-y-4">
-          {/* Logo */}
           <h1 className="text-3xl font-black text-[#2D3142]" style={{ fontFamily: "var(--font-display)" }}>
             PALA
           </h1>
@@ -37,7 +36,6 @@ export default function LoginPage() {
         </CardHeader>
 
         <CardContent>
-          {/* Hardcoded login for hackathon */}
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium text-[#2D3142]">

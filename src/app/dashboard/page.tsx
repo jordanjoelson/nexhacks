@@ -21,7 +21,6 @@ export default function DashboardPage() {
       date: "Jan 18, 2026",
       title: "Tournament Practice Session",
       duration: "12:34",
-      thumbnail: "/thumbnails/session1.jpg",
       improvements: ["Footwork", "Serve placement"],
       score: 82,
     },
@@ -30,7 +29,6 @@ export default function DashboardPage() {
       date: "Jan 15, 2026",
       title: "Doubles Match Analysis",
       duration: "18:22",
-      thumbnail: "/thumbnails/session2.jpg",
       improvements: ["Court positioning", "Dinking"],
       score: 78,
     },
@@ -39,7 +37,6 @@ export default function DashboardPage() {
       date: "Jan 12, 2026",
       title: "Solo Drill Practice",
       duration: "8:15",
-      thumbnail: "/thumbnails/session3.jpg",
       improvements: ["Third shot drop", "Volleys"],
       score: 75,
     },
@@ -48,7 +45,6 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#FFFAF5] to-[#FFF5EB] px-6 py-12">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="flex items-center justify-between mb-12">
           <div>
             <h1 className="text-5xl font-bold mb-2 text-[#2D3142]" style={{ fontFamily: "var(--font-display)" }}>
@@ -68,7 +64,6 @@ export default function DashboardPage() {
           </Button>
         </div>
 
-        {/* Stats Overview */}
         <div className="grid md:grid-cols-3 gap-6 mb-12">
           <Card className="p-6 border-2 border-[#FF6B35]/20 bg-white">
             <div className="flex items-center justify-between mb-4">
@@ -98,13 +93,11 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Progress Flow Map */}
         <Card className="p-8 border-2 border-[#FF6B35]/20 mb-12 bg-white">
           <h2 className="text-2xl font-bold mb-6 text-[#2D3142]" style={{ fontFamily: "var(--font-display)" }}>
             Your Progress Journey
           </h2>
 
-          {/* Visual flow timeline */}
           <div className="relative">
             <div className="absolute left-8 top-0 bottom-0 w-1 bg-gradient-to-b from-[#FF6B35] via-[#4ECDC4] to-[#FFB84D]" />
 
@@ -159,7 +152,6 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        {/* Recent Sessions Grid */}
         <div>
           <h2 className="text-2xl font-bold mb-6 text-[#2D3142]" style={{ fontFamily: "var(--font-display)" }}>
             All Sessions
