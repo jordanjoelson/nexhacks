@@ -349,13 +349,7 @@ IMPORTANT: Make the summary VERY DETAILED and comprehensive. Keep bullet points 
               {/* Points: ONLY appear after typing completes (or skip) */}
               {phase === "points" && typingComplete && (
                 <div className="w-full space-y-6">
-                  <div className="p-4 bg-[#FFF5EB] rounded-lg border border-[#FFB84D]/20">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Sparkles className="w-5 h-5 text-[#FF6B35]" />
-                      <p className="font-bold text-[#2D3142]">Summary</p>
-                    </div>
-                    <p className="text-[#2D3142] leading-relaxed whitespace-pre-wrap">{summaryText}</p>
-                  </div>
+                  {/* ✅ Summary removed — bullets replace it */}
 
                   <div className="grid md:grid-cols-2 gap-6">
                     <Card className="bg-gradient-to-br from-[#4ECDC4]/10 to-white border-[#4ECDC4]/20">
@@ -397,7 +391,6 @@ IMPORTANT: Make the summary VERY DETAILED and comprehensive. Keep bullet points 
                   </div>
 
                   <div className="flex justify-center pt-2">
-                    {/* IMPORTANT: avoid asChild here to prevent the console warning if your Button isn't fixed yet */}
                     <Button
                       size="lg"
                       className="bg-[#FF6B35] hover:bg-[#E85A2A] text-lg px-10 group"
@@ -412,6 +405,7 @@ IMPORTANT: Make the summary VERY DETAILED and comprehensive. Keep bullet points 
                   </div>
                 </div>
               )}
+
 
               {!videoUrl && (
                 <div className="text-center space-y-2">
