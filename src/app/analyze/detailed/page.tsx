@@ -101,30 +101,45 @@ export default function DetailedAnalysisPage() {
   ];
 
   const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-        if (audioRef.current) {
-          audioRef.current.pause();
-        }
-      } else {
-        // Sync audio before playing
-        if (audioRef.current && audioUrl && videoRef.current) {
-          const video = videoRef.current;
-          const audio = audioRef.current;
-          if (video.duration > 0 && audio.duration > 0) {
-            const audioTime = (video.currentTime / video.duration) * audio.duration;
-            audio.currentTime = audioTime;
-          }
-        }
-        videoRef.current.play();
-        if (audioRef.current && audioUrl) {
-          audioRef.current.play().catch((err) => {
-            console.error("Error playing audio:", err);
-          });
-        }
+    const video = videoRef.current;
+    const audio = audioRef.current;
+
+    if (!video) return;
+
+    if (isPlaying) {
+      // Pause both video and audio
+      video.pause();
+      if (audio && !audio.paused) {
+        audio.pause();
       }
-      setIsPlaying(!isPlaying);
+      setIsPlaying(false);
+    } else {
+      // Play both video and audio
+      if (audio && audioUrl) {
+        // Sync audio to video time before playing
+        if (video.duration > 0 && audio.duration > 0) {
+          const audioTime = (video.currentTime / video.duration) * audio.duration;
+          audio.currentTime = audioTime;
+        }
+        // Play both together
+        Promise.all([
+          video.play(),
+          audio.play().catch((err) => {
+            console.error("Error playing audio:", err);
+          }),
+        ]).then(() => {
+          setIsPlaying(true);
+        }).catch((err) => {
+          console.error("Error playing video:", err);
+        });
+      } else {
+        // Just play video if no audio
+        video.play().then(() => {
+          setIsPlaying(true);
+        }).catch((err) => {
+          console.error("Error playing video:", err);
+        });
+      }
     }
   };
 
@@ -258,7 +273,50 @@ export default function DetailedAnalysisPage() {
     }
   };
 
-  // Sync audio with video playback
+  // Auto-play video and audio when audio is ready
+  useEffect(() => {
+    const video = videoRef.current;
+    const audio = audioRef.current;
+
+    if (!video || !audio || !audioUrl || isGeneratingAudio) return;
+
+    const startPlayback = async () => {
+      try {
+        // Wait for audio to be ready
+        if (audio.readyState < 2) {
+          audio.addEventListener("canplay", startPlayback, { once: true });
+          return;
+        }
+
+        // Sync audio to video start
+        if (video.duration > 0 && audio.duration > 0) {
+          audio.currentTime = 0;
+        }
+
+        // Start both video and audio
+        const audioPromise = audio.play();
+        const videoPromise = video.play();
+
+        await Promise.all([audioPromise, videoPromise]);
+        setIsPlaying(true);
+      } catch (err) {
+        console.error("Error auto-playing:", err);
+        // User interaction might be required, so don't auto-play
+      }
+    };
+
+    // Small delay to ensure elements are ready
+    const timeout = setTimeout(() => {
+      startPlayback();
+    }, 100);
+
+    return () => {
+      clearTimeout(timeout);
+      audio.removeEventListener("canplay", startPlayback);
+    };
+  }, [audioUrl, isGeneratingAudio]);
+
+  // Sync audio with video playback and handle play/pause states
   useEffect(() => {
     const video = videoRef.current;
     const audio = audioRef.current;
@@ -273,6 +331,7 @@ export default function DetailedAnalysisPage() {
     };
 
     const handleVideoPlay = () => {
+      setIsPlaying(true);
       syncAudioToVideo();
       if (audio.paused) {
         audio.play().catch((err) => {
@@ -282,6 +341,7 @@ export default function DetailedAnalysisPage() {
     };
 
     const handleVideoPause = () => {
+      setIsPlaying(false);
       if (!audio.paused) {
         audio.pause();
       }
@@ -295,14 +355,19 @@ export default function DetailedAnalysisPage() {
       syncAudioToVideo();
     };
 
+    // Update playing state based on video state
+    const handleVideoPlaying = () => setIsPlaying(true);
+
     video.addEventListener("play", handleVideoPlay);
     video.addEventListener("pause", handleVideoPause);
+    video.addEventListener("playing", handleVideoPlaying);
     video.addEventListener("seeking", handleVideoSeeking);
     video.addEventListener("seeked", handleVideoSeeked);
 
     return () => {
       video.removeEventListener("play", handleVideoPlay);
       video.removeEventListener("pause", handleVideoPause);
+      video.removeEventListener("playing", handleVideoPlaying);
       video.removeEventListener("seeking", handleVideoSeeking);
       video.removeEventListener("seeked", handleVideoSeeked);
     };
@@ -796,8 +861,8 @@ Be specific and actionable.`,
                           </div>
                           <div className="bg-white border border-[#E5E7EB] rounded-lg px-3 py-2">
                             <Loader2 className="w-4 h-4 text-[#4ECDC4] animate-spin" />
-                          </div>
-                        </div>
+                </div>
+              </div>
                       )}
                     </div>
 

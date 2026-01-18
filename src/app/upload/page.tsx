@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Upload, Video, CheckCircle, Loader2, Camera, Move, Play } from "lucide-react";
+import { Upload, Video, CheckCircle, Loader2, Camera, Move, Play, ArrowLeft } from "lucide-react";
 import { useVideoStore } from "@/store/videoStore";
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -68,6 +68,16 @@ export default function UploadPage() {
   return (
     <div className="min-h-screen bg-[#FFFAF5] p-6">
       <div className="max-w-4xl mx-auto">
+        <div className="mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => router.push("/")}
+            className="mb-4 hover:bg-[#FF6B35]/10 text-[#6B7280] hover:text-[#2D3142]"
+          >
+            <ArrowLeft className="mr-2 w-4 h-4" />
+            Back to Home
+          </Button>
+        </div>
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold mb-4 text-[#2D3142]" style={{ fontFamily: "var(--font-display)" }}>
             Upload Your Game
