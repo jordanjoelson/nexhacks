@@ -195,7 +195,8 @@ export default function SummaryPage() {
 
     const initAnalysis = async () => {
       try {
-
+        setPhase("analyzing");
+        resultsRef.current = [];
         const vision = new RealtimeVision({
           apiUrl,
           apiKey,
