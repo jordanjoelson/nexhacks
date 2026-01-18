@@ -13,11 +13,15 @@ export async function POST(request: NextRequest) {
 
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) {
+      console.error("ELEVENLABS_API_KEY is not set in environment variables");
       return NextResponse.json(
-        { error: "ElevenLabs API key not configured" },
+        { error: "ElevenLabs API key not configured. Please set ELEVENLABS_API_KEY in .env.local" },
         { status: 500 }
       );
     }
+
+    // Log first few characters for debugging (don't log full key)
+    console.log("Using ElevenLabs API key (first 10 chars):", apiKey.substring(0, 10) + "...");
 
     // Use the streaming endpoint for better performance
     const response = await fetch(
@@ -44,9 +48,31 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("ElevenLabs API error:", errorText);
+      console.error("ElevenLabs API error:", {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText,
+      });
+      
+      let errorMessage = `ElevenLabs API error: ${response.statusText}`;
+      try {
+        const errorData = JSON.parse(errorText);
+        if (errorData.detail?.message) {
+          errorMessage = errorData.detail.message;
+        } else if (errorData.detail) {
+          errorMessage = errorData.detail;
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } catch (e) {
+        // If parsing fails, use the text as is
+        if (errorText) {
+          errorMessage = errorText.substring(0, 200);
+        }
+      }
+      
       return NextResponse.json(
-        { error: `ElevenLabs API error: ${response.statusText}` },
+        { error: errorMessage },
         { status: response.status }
       );
     }

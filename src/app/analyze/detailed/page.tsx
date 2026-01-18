@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { RealtimeVision, type StreamInferenceResult } from "@overshoot/sdk";
 import { useVideoStore } from "@/store/videoStore";
 import ReactMarkdown from "react-markdown";
 import { motion } from "framer-motion";
+import * as cocoSsd from "@tensorflow-models/coco-ssd";
+import "@tensorflow/tfjs";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,11 +48,18 @@ export default function DetailedAnalysisPage() {
   // Video player state
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [progress, setProgress] = useState(0);
+
+  // Player detection state
+  const detectionModelRef = useRef<any>(null);
+  const playerTracksRef = useRef<Map<number, { id: number; bbox: number[]; lastSeen: number }>>(new Map());
+  const nextPlayerIdRef = useRef<number>(1);
+  const detectionAnimationFrameRef = useRef<number | null>(null);
 
   // ElevenLabs TTS state
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
@@ -193,6 +202,281 @@ export default function DetailedAnalysisPage() {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  // Calculate Intersection over Union (IOU) for tracking
+  const calculateIOU = (box1: number[], box2: number[]): number => {
+    const [x1, y1, w1, h1] = box1;
+    const [x2, y2, w2, h2] = box2;
+    
+    const xi1 = Math.max(x1, x2);
+    const yi1 = Math.max(y1, y2);
+    const xi2 = Math.min(x1 + w1, x2 + w2);
+    const yi2 = Math.min(y1 + h1, y2 + h2);
+    
+    const interArea = Math.max(0, xi2 - xi1) * Math.max(0, yi2 - yi1);
+    const box1Area = w1 * h1;
+    const box2Area = w2 * h2;
+    const unionArea = box1Area + box2Area - interArea;
+    
+    return unionArea > 0 ? interArea / unionArea : 0;
+  };
+
+  // Initialize COCO-SSD model for person detection
+  const initializeDetectionModel = useCallback(async () => {
+    if (detectionModelRef.current) return detectionModelRef.current;
+    
+    try {
+      console.log("Loading COCO-SSD model...");
+      const model = await cocoSsd.load();
+      detectionModelRef.current = model;
+      console.log("COCO-SSD model loaded successfully");
+      return model;
+    } catch (error) {
+      console.error("Failed to load detection model:", error);
+      return null;
+    }
+  }, []);
+
+  // Detect players in current video frame
+  const detectPlayers = useCallback(async () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const model = detectionModelRef.current;
+
+    if (!video || !canvas || !model || video.readyState < 2) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Set canvas size to match video
+    const videoWidth = video.videoWidth || video.clientWidth;
+    const videoHeight = video.videoHeight || video.clientHeight;
+    canvas.width = videoWidth;
+    canvas.height = videoHeight;
+
+    try {
+      // Detect objects in the frame
+      const predictions = await model.detect(video);
+      
+      // Filter for "person" class with higher confidence
+      let persons = predictions.filter((p: any) => p.class === "person" && p.score > 0.6);
+      
+      // Filter out crowd/sideline people by size and position
+      // For doubles (2v2), we want players on both closer and farther sides
+      const minPlayerHeight = videoHeight * 0.12; // At least 12% of video height (allows closer players)
+      const maxPlayerHeight = videoHeight * 0.65; // Max 65% of video height
+      const edgeMargin = videoWidth * 0.05; // Only 5% margin from edges (allows more of the frame)
+      
+      persons = persons.filter((p: any) => {
+        const [x, y, w, h] = p.bbox;
+        const bboxCenterX = x + w / 2;
+        const bboxCenterY = y + h / 2;
+        
+        // Filter by size - players should be reasonably sized
+        // Closer players will be larger, farther players smaller
+        if (h < minPlayerHeight || h > maxPlayerHeight) return false;
+        
+        // Filter by position - only filter out very edge detections (likely crowd)
+        // Allow players across most of the width (closer and farther sides)
+        if (bboxCenterX < edgeMargin || bboxCenterX > videoWidth - edgeMargin) return false;
+        
+        // Filter by aspect ratio - players should be taller than wide
+        const aspectRatio = h / w;
+        if (aspectRatio < 1.1) return false; // Too wide, likely not a standing person
+        
+        // Additional filter: players should be in the lower 2/3 of the frame (court area)
+        // This helps filter out people in stands/background
+        if (bboxCenterY < videoHeight * 0.15) return false; // Too high up, likely background
+        
+        return true;
+      });
+      
+      // Sort by vertical position (top to bottom) to assign consistent IDs
+      persons.sort((a: any, b: any) => a.bbox[1] - b.bbox[1]);
+      
+      // Track players across frames
+      const currentFrame = Date.now();
+      const matchedTracks = new Set<number>();
+      
+      // Match detections to existing tracks
+      for (const person of persons) {
+        const bbox = [
+          person.bbox[0], // x
+          person.bbox[1], // y
+          person.bbox[2], // width
+          person.bbox[3], // height
+        ];
+        
+        let bestMatch: { id: number; iou: number } | null = null;
+        
+        // Find best matching track
+        for (const [trackId, track] of playerTracksRef.current.entries()) {
+          const iou = calculateIOU(bbox, track.bbox);
+          if (iou > 0.3 && (!bestMatch || iou > bestMatch.iou)) {
+            bestMatch = { id: trackId, iou };
+          }
+        }
+        
+        if (bestMatch && bestMatch.iou > 0.3) {
+          // Update existing track
+          const track = playerTracksRef.current.get(bestMatch.id);
+          if (track) {
+            track.bbox = bbox;
+            track.lastSeen = currentFrame;
+            matchedTracks.add(bestMatch.id);
+          }
+        } else {
+          // Create new track - assign ID based on position if no existing tracks
+          let newId: number;
+          if (playerTracksRef.current.size === 0) {
+            // First player detected
+            newId = 1;
+            nextPlayerIdRef.current = 2;
+          } else {
+            // Find the next available ID
+            const existingIds = Array.from(playerTracksRef.current.keys()).sort((a, b) => a - b);
+            let foundId = false;
+            for (let i = 1; i <= existingIds.length + 1; i++) {
+              if (!existingIds.includes(i)) {
+                newId = i;
+                foundId = true;
+                break;
+              }
+            }
+            if (!foundId) {
+              newId = nextPlayerIdRef.current++;
+            }
+          }
+          
+          playerTracksRef.current.set(newId, {
+            id: newId,
+            bbox,
+            lastSeen: currentFrame,
+          });
+          matchedTracks.add(newId);
+        }
+      }
+      
+      // Remove tracks that haven't been seen in 1.5 seconds (longer timeout for stability)
+      const timeoutAgo = currentFrame - 1500;
+      const tracksToRemove: number[] = [];
+      for (const [trackId, track] of playerTracksRef.current.entries()) {
+        if (!matchedTracks.has(trackId) && track.lastSeen < timeoutAgo) {
+          tracksToRemove.push(trackId);
+        }
+      }
+      
+      // Remove expired tracks
+      for (const trackId of tracksToRemove) {
+        playerTracksRef.current.delete(trackId);
+      }
+      
+      // Renumber players sequentially (1, 2, 3, 4...) when tracks are removed
+      // Sort by current ID to maintain some consistency
+      const sortedByCurrentId = Array.from(playerTracksRef.current.entries())
+        .sort((a, b) => a[1].id - b[1].id);
+      
+      // Create new map with renumbered IDs
+      const renumberedTracks = new Map<number, { id: number; bbox: number[]; lastSeen: number }>();
+      let newId = 1;
+      
+      for (const [oldId, track] of sortedByCurrentId) {
+        renumberedTracks.set(newId, {
+          id: newId,
+          bbox: track.bbox,
+          lastSeen: track.lastSeen,
+        });
+        newId++;
+      }
+      
+      // Update the tracks map with renumbered IDs
+      playerTracksRef.current = renumberedTracks;
+      
+      // Update nextPlayerIdRef to be the next available number
+      nextPlayerIdRef.current = newId;
+      
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Sort tracks by ID for consistent rendering
+      const sortedTracks = Array.from(playerTracksRef.current.values()).sort((a, b) => a.id - b.id);
+      
+      // Draw bounding boxes for active tracks
+      for (const track of sortedTracks) {
+        const [x, y, w, h] = track.bbox;
+        
+        // Draw red bounding box
+        ctx.strokeStyle = "#FF0000";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x, y, w, h);
+        
+        // Draw label background
+        const label = `Player ${track.id}`;
+        ctx.font = "bold 18px Arial";
+        ctx.fillStyle = "#FF0000";
+        const textMetrics = ctx.measureText(label);
+        const textWidth = textMetrics.width;
+        const textHeight = 22;
+        
+        ctx.fillRect(x, y - textHeight - 4, textWidth + 10, textHeight + 4);
+        
+        // Draw label text
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillText(label, x + 5, y - 8);
+      }
+    } catch (error) {
+      console.error("Detection error:", error);
+    }
+  }, []);
+
+  // Detection loop
+  const runDetection = useCallback(() => {
+    if (!isPlaying) {
+      detectionAnimationFrameRef.current = null;
+      return;
+    }
+    
+    detectPlayers();
+    detectionAnimationFrameRef.current = requestAnimationFrame(runDetection);
+  }, [isPlaying, detectPlayers]);
+
+  // Format key moments for TTS narration
+  const formatKeyMomentsForTTS = (moments: typeof keyMoments): string => {
+    if (moments.length === 0) return "";
+    
+    let text = "Here are the key moments I noticed:\n\n";
+    
+    moments.forEach((moment, index) => {
+      const timeStr = formatTime(moment.timestamp);
+      const typeLabel = moment.type === "strength" 
+        ? "strength" 
+        : moment.type === "improvement" 
+        ? "area to improve" 
+        : "tip";
+      
+      text += `At ${timeStr}, I saw a ${typeLabel}: ${moment.title}. ${moment.description}\n\n`;
+    });
+    
+    return text;
+  };
+
+  // Hardcoded responses for common questions
+  const getHardcodedResponse = (question: string): string | null => {
+    const lowerQuestion = question.toLowerCase().trim();
+    
+    // Check for positioning-related questions
+    if (lowerQuestion.includes("positioning") || lowerQuestion.includes("position")) {
+      return "Your positioning looks really solid, but there are some improvements to be made. Make sure to commit and go close to the net but not in the kitchen! Or stay behind the baseline. You don't want to get caught in no man's land.";
+    }
+    
+    // Add more hardcoded responses here as needed
+    // Example:
+    // if (lowerQuestion.includes("serve")) {
+    //   return "Your serve is looking good! Try to...";
+    // }
+    
+    return null; // Return null if no hardcoded response exists
+  };
+
   // Chat with PALA function
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -203,6 +487,21 @@ export default function DetailedAnalysisPage() {
     setChatMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setIsChatLoading(true);
 
+    // Check for hardcoded response first
+    const hardcodedResponse = getHardcodedResponse(userMessage);
+    if (hardcodedResponse) {
+      // Simulate a small delay for natural feel
+      setTimeout(() => {
+        setChatMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: hardcodedResponse },
+        ]);
+        setIsChatLoading(false);
+      }, 500);
+      return;
+    }
+
+    // Otherwise, use Gemini API
     try {
       const response = await fetch("/api/gemini-chat", {
         method: "POST",
@@ -240,20 +539,52 @@ export default function DetailedAnalysisPage() {
     }
   };
 
+  // Strip markdown formatting for TTS
+  const stripMarkdown = (text: string): string => {
+    return text
+      // Remove markdown headers
+      .replace(/^#{1,6}\s+/gm, "")
+      // Remove bold/italic
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/__([^_]+)__/g, "$1")
+      .replace(/_([^_]+)_/g, "$1")
+      // Remove links
+      .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1")
+      // Remove code blocks
+      .replace(/```[\s\S]*?```/g, "")
+      .replace(/`([^`]+)`/g, "$1")
+      // Remove list markers
+      .replace(/^[\s]*[-*+]\s+/gm, "")
+      .replace(/^[\s]*\d+\.\s+/gm, "")
+      // Remove blockquotes
+      .replace(/^>\s+/gm, "")
+      // Clean up extra whitespace
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  };
+
   // Generate TTS audio from text
   const generateTTSAudio = async (text: string) => {
     try {
       setIsGeneratingAudio(true);
       setAudioError(null);
 
-      console.log("Generating TTS audio for text length:", text.length);
+      // Strip markdown formatting for better TTS
+      const cleanText = stripMarkdown(text);
+      console.log("Generating TTS audio for text length:", cleanText.length);
+      console.log("First 200 chars:", cleanText.substring(0, 200));
+
+      if (!cleanText || cleanText.trim().length === 0) {
+        throw new Error("No text content to convert to speech");
+      }
 
       const response = await fetch("/api/elevenlabs-tts", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text: cleanText }),
       });
 
       if (!response.ok) {
@@ -443,7 +774,10 @@ Be specific and actionable.`,
           source: { type: "video", file },
           onResult: (result) => {
             if (result.result?.trim()) {
+              console.log("Overshoot result received:", result.result.substring(0, 100));
               resultsRef.current.push(result);
+            } else {
+              console.log("Overshoot result received but empty:", result);
             }
           },
           onError: (err) => {
@@ -457,25 +791,66 @@ Be specific and actionable.`,
 
         analysisTimeoutRef.current = setTimeout(() => {
           vision.stop();
+          
+          console.log("Analysis timeout reached. Results collected:", resultsRef.current.length);
+          console.log("All results:", resultsRef.current.map(r => ({ 
+            hasResult: !!r.result, 
+            resultLength: r.result?.length || 0,
+            preview: r.result?.substring(0, 50) || "empty"
+          })));
 
           const text = resultsRef.current
             .map((r) => r.result)
             .filter((r) => r && r.trim())
             .join(" ");
 
-          setFullText(text || "Analysis complete. (No detailed text returned.)");
+          console.log("Analysis results collected:", resultsRef.current.length);
+          console.log("Combined text length:", text?.length || 0);
+          console.log("Text preview:", text?.substring(0, 200) || "No text");
+
+          // Only set fallback if we truly have no text
+          const finalText = text && text.trim() && text.trim() !== "" 
+            ? text.trim() 
+            : "Analysis complete. (No detailed text returned.)";
+          
+          setFullText(finalText);
           setPhase("ready");
 
           // Generate TTS audio from the analysis text
-          if (text && text.trim()) {
+          // Only generate if we have actual analysis text (not the fallback message)
+          const hasValidText = text && text.trim() && text.trim().length > 50; // At least 50 chars to be valid
+          
+          if (hasValidText) {
             console.log("Analysis complete, generating TTS for text length:", text.length);
-            // Use first 5000 characters to avoid API limits
-            const textForTTS = text.trim().substring(0, 5000);
-            generateTTSAudio(textForTTS);
+            console.log("Text preview:", text.substring(0, 200));
+            
+            // Build the full TTS script with intro, key moments, and analysis
+            const intro = "Heya! Let's get to breaking down your footage. Good on you for getting out there—that's half the battle. I've analyzed your game, and I'm seeing some real potential. Here's what your paddle's telling me.\n\n";
+            const keyMomentsText = formatKeyMomentsForTTS(keyMoments);
+            const analysisText = text.trim().substring(0, 8000); // Reserve space for intro and key moments
+            
+            const fullTTS = intro + keyMomentsText + "\nNow, let me dive deeper into the details.\n\n" + analysisText;
+            
+            console.log("Full TTS text length:", fullTTS.length);
+            generateTTSAudio(fullTTS);
           } else {
-            console.warn("No text available for TTS generation");
+            console.warn("No analysis text available for TTS generation");
+            console.warn("Results count:", resultsRef.current.length);
+            console.warn("Text value:", text);
+            console.warn("Text length:", text?.length || 0);
+            
+            // Still generate TTS with intro and key moments even if analysis text is missing
+            if (keyMoments.length > 0) {
+              console.log("Generating TTS with intro and key moments only (no detailed analysis)");
+              const intro = "Heya! Let's get to breaking down your footage. Good on you for getting out there—that's half the battle. I've analyzed your game, and I'm seeing some real potential. Here's what your paddle's telling me.\n\n";
+              const keyMomentsText = formatKeyMomentsForTTS(keyMoments);
+              const fullTTS = intro + keyMomentsText;
+              generateTTSAudio(fullTTS);
+            } else {
+              setAudioError("No analysis text available for voice narration. Please check your Overshoot API configuration.");
+            }
           }
-        }, 20000);
+        }, 30000); // Increased timeout to 30 seconds
       } catch (e: any) {
         console.error("Error starting detailed analysis:", e);
         setError(e?.message || "Failed to start analysis.");
@@ -508,6 +883,78 @@ Be specific and actionable.`,
       });
     }
   }, [previewUrl]);
+
+  // Initialize detection model when video is ready
+  useEffect(() => {
+    if (previewUrl && videoRef.current) {
+      const initModel = async () => {
+        await initializeDetectionModel();
+      };
+      initModel();
+    }
+  }, [previewUrl, initializeDetectionModel]);
+
+  // Resize canvas to match video dimensions
+  useEffect(() => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    
+    if (!video || !canvas) return;
+
+    const updateCanvasSize = () => {
+      if (video.videoWidth && video.videoHeight) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+      } else {
+        // Fallback to display size
+        const rect = video.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+      }
+    };
+
+    video.addEventListener("loadedmetadata", updateCanvasSize);
+    video.addEventListener("resize", updateCanvasSize);
+    
+    // Initial size
+    updateCanvasSize();
+
+    return () => {
+      video.removeEventListener("loadedmetadata", updateCanvasSize);
+      video.removeEventListener("resize", updateCanvasSize);
+    };
+  }, [previewUrl]);
+
+  // Start/stop detection loop based on video playback
+  useEffect(() => {
+    if (isPlaying && detectionModelRef.current) {
+      // Start detection loop
+      if (!detectionAnimationFrameRef.current) {
+        runDetection();
+      }
+    } else {
+      // Stop detection loop
+      if (detectionAnimationFrameRef.current) {
+        cancelAnimationFrame(detectionAnimationFrameRef.current);
+        detectionAnimationFrameRef.current = null;
+      }
+      // Clear canvas when paused
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+    }
+
+    return () => {
+      if (detectionAnimationFrameRef.current) {
+        cancelAnimationFrame(detectionAnimationFrameRef.current);
+        detectionAnimationFrameRef.current = null;
+      }
+    };
+  }, [isPlaying, runDetection]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#FFFAF5] to-[#FFF5EB] px-4 sm:px-6 py-8 sm:py-12">
@@ -581,8 +1028,15 @@ Be specific and actionable.`,
                     onTimeUpdate={handleTimeUpdate}
                   />
 
+                  {/* Canvas overlay for player detection */}
+                  <canvas
+                    ref={canvasRef}
+                    className="absolute inset-0 w-full h-full pointer-events-none"
+                    style={{ zIndex: 10 }}
+                  />
+
                   {/* Overlay Annotations */}
-                  <div className="absolute inset-0 pointer-events-none">
+                  <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 20 }}>
                     {annotations.map((annotation, i) => (
                       <div
                         key={i}
@@ -694,7 +1148,7 @@ Be specific and actionable.`,
                           <p className="text-xs text-[#6B7280]">
                             {isPlaying ? "PALA is narrating..." : "Click play to hear PALA's narration"}
                           </p>
-                        </div>
+                    </div>
                       </>
                     ) : (
                       <>
@@ -809,7 +1263,7 @@ Be specific and actionable.`,
                     >
                       {fullText}
                     </ReactMarkdown>
-                  </div>
+                </div>
                 </Card>
               )}
 

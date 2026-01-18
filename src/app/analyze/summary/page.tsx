@@ -19,6 +19,7 @@ import {
   TrendingUp,
   AlertCircle,
   ArrowRight,
+  ArrowLeft,
   Camera,
   Move,
   Play,
@@ -282,6 +283,18 @@ IMPORTANT: Make the summary VERY DETAILED and comprehensive. Keep bullet points 
   return (
     <div className="min-h-screen bg-[#FFFAF5] p-4 sm:p-6">
       <div className="max-w-4xl mx-auto">
+        {/* Back button */}
+        <div className="mb-6 sm:mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => router.push("/upload")}
+            className="hover:bg-[#FF6B35]/10 text-[#6B7280] hover:text-[#2D3142] text-sm sm:text-base"
+          >
+            <ArrowLeft className="mr-2 w-4 h-4" />
+            Back to Upload
+          </Button>
+        </div>
+
         {/* IDENTICAL header block */}
         <div className="text-center mb-8 sm:mb-12">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 text-[#2D3142] px-4" style={{ fontFamily: "var(--font-display)" }}>
