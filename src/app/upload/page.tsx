@@ -25,12 +25,17 @@ export default function UploadPage() {
     setIsUploading(true);
     setSelectedFile(fileToUpload);
 
+    const videoUrl = URL.createObjectURL(fileToUpload);
+
     // Simulate upload progress
     const interval = setInterval(() => {
       setUploadProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
-          setTimeout(() => router.push("/analysis/${id}"), 500);
+          setTimeout(() => {
+            router.push(`/analyze/summary?video=${encodeURIComponent(videoUrl)}`);
+          }, 500);
+
           return 100;
         }
         return prev + 10;
